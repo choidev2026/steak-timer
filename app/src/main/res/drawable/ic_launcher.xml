@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 0 임시 런처 아이콘 (타이머 글리프). 이후 정식 아이콘으로 교체 예정. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#D84315"
+        android:pathData="M0,0h108v108h-108z" />
+    <!-- 스톱워치 상단 버튼 -->
+    <path
+        android:fillColor="#FFF3E0"
+        android:pathData="M48,20h12v8h-12z" />
+    <!-- 시계 본체 -->
+    <path
+        android:fillColor="#FFF3E0"
+        android:pathData="M54,30a28,28 0 1,0 0.01,0z M54,40a18,18 0 1,1 -0.01,0z" />
+    <!-- 시침 -->
+    <path
+        android:fillColor="#D84315"
+        android:pathData="M52,50h4v14h-4z" />
+</vector>
