@@ -1,0 +1,12 @@
+.DS_Store
+*.log
+
+# Android/Gradle
+.gradle/
+build/
+.idea/
+*.iml
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
