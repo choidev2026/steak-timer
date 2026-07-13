@@ -42,50 +42,58 @@ private fun TimerContent(
 ) {
     Scaffold(timeText = { TimeText() }) {
         Box(modifier = Modifier.fillMaxSize()) {
-
-            // 타이머 본체. 종료 확인 오버레이가 떠 있으면 제스처를 받지 않는다.
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(ui.showStopConfirm) {
-                        if (!ui.showStopConfirm) {
-                            detectTapGestures(
-                                onTap = { onIntent(TimerUiIntent.Tap) },
-                                onLongPress = { onIntent(TimerUiIntent.LongPress) },
-                            )
-                        }
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator(
-                    progress = ui.progress,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(4.dp),
-                )
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        text = ui.timeText,
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.display1,
-                    )
-                    if (ui.hint.isNotEmpty()) {
-                        Text(
-                            text = ui.hint,
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.caption2,
-                        )
-                    }
-                }
-            }
+            TimerBody(ui = ui, onIntent = onIntent)
 
             if (ui.showStopConfirm) {
                 StopConfirmOverlay(
                     onStop = { onIntent(TimerUiIntent.ConfirmStop) },
                     onCancel = { onIntent(TimerUiIntent.CancelStop) },
+                )
+            }
+        }
+    }
+}
+
+/** 타이머 본체: 남은 시간 + 원형 progress + 탭/롱프레스 제스처. */
+@Composable
+private fun TimerBody(
+    ui: TimerUiState,
+    onIntent: (TimerUiIntent) -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            // 종료 확인 오버레이가 떠 있으면 본체는 제스처를 받지 않는다.
+            .pointerInput(ui.showStopConfirm) {
+                if (!ui.showStopConfirm) {
+                    detectTapGestures(
+                        onTap = { onIntent(TimerUiIntent.Tap) },
+                        onLongPress = { onIntent(TimerUiIntent.LongPress) },
+                    )
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator(
+            progress = ui.progress,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(4.dp),
+        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = ui.timeText,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.display1,
+            )
+            if (ui.hint.isNotEmpty()) {
+                Text(
+                    text = ui.hint,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.caption2,
                 )
             }
         }
