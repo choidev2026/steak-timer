@@ -21,5 +21,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "SteakTimer"
 include(":app")
-include(":domain")
+include(":core:domain")
 include(":core:platform")
+include(":feature:timer")
