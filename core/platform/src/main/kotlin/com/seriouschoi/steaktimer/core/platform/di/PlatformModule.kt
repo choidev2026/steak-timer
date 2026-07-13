@@ -1,6 +1,8 @@
 package com.seriouschoi.steaktimer.core.platform.di
 
 import com.seriouschoi.steaktimer.core.platform.CoroutineTimerEngine
+import com.seriouschoi.steaktimer.core.platform.VibratorHaptic
+import com.seriouschoi.steaktimer.domain.Haptic
 import com.seriouschoi.steaktimer.domain.TimerEngine
 import dagger.Binds
 import dagger.Module
@@ -19,4 +21,8 @@ abstract class PlatformModule {
     @Binds
     @Singleton
     abstract fun bindTimerEngine(impl: CoroutineTimerEngine): TimerEngine
+
+    @Binds
+    @Singleton
+    abstract fun bindHaptic(impl: VibratorHaptic): Haptic
 }
