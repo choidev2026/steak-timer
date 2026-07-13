@@ -29,6 +29,14 @@ class TimerViewModel @Inject constructor(
             initialValue = TimerUiState.INITIAL,
         )
 
+    /** 화면에서 온 UI 인텐트를 세션 입력으로 발행한다. 단일 진입점. */
+    fun dispatch(intent: TimerUiIntent) = when (intent) {
+        TimerUiIntent.Tap -> session.tap()
+        TimerUiIntent.LongPress -> session.longPress()
+        TimerUiIntent.ConfirmStop -> session.confirmStop()
+        TimerUiIntent.CancelStop -> session.cancelStop()
+    }
+
     init {
         // Phase 3 데모용: 설정 화면(Phase 6)이 생기기 전까지 기본 간격으로 자동 시작.
         session.start(DEFAULT_INTERVAL_MS)
