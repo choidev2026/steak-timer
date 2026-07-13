@@ -70,11 +70,12 @@ class TimerViewModelTest {
         runTest(mainDispatcher.scheduler) {
             val engine = FakeTimerEngine()
             val haptic = FakeHaptic()
-            TimerViewModel(engine, haptic) // init에서 자동 start → Running, 진동 콜렉터 가동
+            TimerViewModel(engine, haptic) // init에서 기본 간격(DEFAULT_INTERVAL_MS)으로 자동 start → Running
             runCurrent()
             assertEquals(0, haptic.startCount) // 아직 Running(알림 아님)
 
-            engine.emit(60_000) // 인터벌 넘겨 Alerting 진입
+            // 기본 간격만큼 흘리면 remaining 0 → Alerting 진입
+            engine.emit(TimerViewModel.DEFAULT_INTERVAL_MS)
             runCurrent()
             assertEquals(1, haptic.startCount)
             assertEquals(0, haptic.stopCount)
@@ -88,7 +89,7 @@ class TimerViewModelTest {
             val vm = TimerViewModel(engine, haptic)
             runCurrent()
 
-            engine.emit(60_000) // Alerting
+            engine.emit(TimerViewModel.DEFAULT_INTERVAL_MS) // 기본 간격만큼 흘려 Alerting 진입
             runCurrent()
             assertEquals(1, haptic.startCount)
 
