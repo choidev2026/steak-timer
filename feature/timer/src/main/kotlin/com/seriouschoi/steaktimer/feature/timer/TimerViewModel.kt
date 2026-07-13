@@ -62,6 +62,8 @@ class TimerViewModel @Inject constructor(
     }
 
     companion object {
-        private const val DEFAULT_INTERVAL_MS = 10_000L
+        // Phase 3 데모용 기본 간격. Phase 6 설정 화면이 생기면 대체된다.
+        // 테스트가 'Alerting까지 흘릴 양'을 이 값으로 참조할 수 있게 internal.
+        internal const val DEFAULT_INTERVAL_MS = 10_000L
     }
 }
