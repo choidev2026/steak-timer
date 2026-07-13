@@ -32,10 +32,10 @@ class SteakTimerSessionTest {
         assertEquals(Running(INTERVAL, INTERVAL, cycle = 0), session.state.value)
 
         fake.shared.emit(1000); runCurrent()
-        assertEquals(Running(INTERVAL, 2000, cycle = 0), session.state.value)
+        assertEquals(Running(INTERVAL, INTERVAL - 1000, cycle = 0), session.state.value)
 
         fake.shared.emit(1000); runCurrent()
-        assertEquals(Running(INTERVAL, 1000, cycle = 0), session.state.value)
+        assertEquals(Running(INTERVAL, INTERVAL - 2000, cycle = 0), session.state.value)
 
         fake.shared.emit(1000); runCurrent()
         assertEquals(Alerting(INTERVAL, cycle = 0), session.state.value)
@@ -54,7 +54,7 @@ class SteakTimerSessionTest {
         assertEquals(Running(INTERVAL, INTERVAL, cycle = 1), session.state.value)
 
         fake.shared.emit(1000); runCurrent()
-        assertEquals(Running(INTERVAL, 2000, cycle = 1), session.state.value)
+        assertEquals(Running(INTERVAL, INTERVAL - 1000, cycle = 1), session.state.value)
     }
 
     @Test
@@ -75,6 +75,6 @@ class SteakTimerSessionTest {
         assertEquals(Running(INTERVAL, INTERVAL, cycle = 0), session.state.value)
 
         fake.shared.emit(1000); runCurrent()
-        assertEquals(Running(INTERVAL, 2000, cycle = 0), session.state.value)
+        assertEquals(Running(INTERVAL, INTERVAL - 1000, cycle = 0), session.state.value)
     }
 }
