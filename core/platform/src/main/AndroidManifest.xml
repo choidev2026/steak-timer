@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- VibratorHaptic이 사용. 앱 매니페스트로 병합된다. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+</manifest>
