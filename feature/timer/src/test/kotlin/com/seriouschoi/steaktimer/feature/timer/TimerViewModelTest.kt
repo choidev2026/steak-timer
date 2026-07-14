@@ -59,7 +59,7 @@ class TimerViewModelTest {
             vm.dispatch(TimerUiIntent.Start(INTERVAL))
             runCurrent()
             assertFalse(vm.uiState.value.showSetup) // Running → 타이머 화면
-            assertEquals(formatMmSs(INTERVAL), vm.uiState.value.timeText)
+            assertEquals(TimeFormat.mmSs(INTERVAL), vm.uiState.value.timeText)
 
             job.cancel()
         }
