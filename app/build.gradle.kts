@@ -44,6 +44,9 @@ dependencies {
     // 컴포지션 루트: 기능과 어댑터 모듈을 결합(어댑터 바인딩이 그래프에 들어오도록 platform도 의존)
     implementation(project(":feature:timer"))
     implementation(project(":core:platform"))
+    // 세션 결선을 위해 domain 타입을 직접 참조(앱 스코프 세션 provide, #16)
+    implementation(project(":core:domain"))
+    implementation(libs.kotlinx.coroutines.core)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.androidx.activity.compose)
