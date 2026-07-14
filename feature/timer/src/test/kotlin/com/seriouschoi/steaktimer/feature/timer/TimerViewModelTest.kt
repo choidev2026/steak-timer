@@ -1,6 +1,7 @@
 package com.seriouschoi.steaktimer.feature.timer
 
 import com.seriouschoi.steaktimer.domain.Haptic
+import com.seriouschoi.steaktimer.domain.SteakTimerSession
 import com.seriouschoi.steaktimer.domain.TimerEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -50,7 +51,8 @@ class TimerViewModelTest {
     @Test
     fun `초기엔 설정 화면, Start하면 벗어난다`() =
         runTest(mainDispatcher.scheduler) {
-            val vm = TimerViewModel(FakeTimerEngine(), FakeHaptic())
+            // 세션은 이제 주입 대상. 테스트에선 test 스케줄러에 묶인 backgroundScope로 만들어 넣는다.
+            val vm = TimerViewModel(SteakTimerSession(FakeTimerEngine(), backgroundScope), FakeHaptic())
             val job = backgroundScope.launch { vm.uiState.collect { } }
             runCurrent()
 
@@ -67,7 +69,8 @@ class TimerViewModelTest {
     @Test
     fun `LongPress는 종료확인을 띄우고 CancelStop은 직전 상태로 복귀시킨다`() =
         runTest(mainDispatcher.scheduler) {
-            val vm = TimerViewModel(FakeTimerEngine(), FakeHaptic())
+            // 세션은 이제 주입 대상. 테스트에선 test 스케줄러에 묶인 backgroundScope로 만들어 넣는다.
+            val vm = TimerViewModel(SteakTimerSession(FakeTimerEngine(), backgroundScope), FakeHaptic())
             val job = backgroundScope.launch { vm.uiState.collect { } }
             vm.dispatch(TimerUiIntent.Start(INTERVAL))
             runCurrent()
@@ -90,7 +93,7 @@ class TimerViewModelTest {
         runTest(mainDispatcher.scheduler) {
             val engine = FakeTimerEngine()
             val haptic = FakeHaptic()
-            val vm = TimerViewModel(engine, haptic)
+            val vm = TimerViewModel(SteakTimerSession(engine, backgroundScope), haptic)
             vm.dispatch(TimerUiIntent.Start(INTERVAL))
             runCurrent()
             assertEquals(0, haptic.startCount) // Running, 아직 알림 아님
@@ -106,7 +109,7 @@ class TimerViewModelTest {
         runTest(mainDispatcher.scheduler) {
             val engine = FakeTimerEngine()
             val haptic = FakeHaptic()
-            val vm = TimerViewModel(engine, haptic)
+            val vm = TimerViewModel(SteakTimerSession(engine, backgroundScope), haptic)
             vm.dispatch(TimerUiIntent.Start(INTERVAL))
             runCurrent()
 

@@ -41,9 +41,12 @@ android {
 }
 
 dependencies {
-    // 컴포지션 루트: 기능과 어댑터 모듈을 결합(어댑터 바인딩이 그래프에 들어오도록 platform도 의존)
+    // 컴포지션 루트: 기능과 어댑터/런타임 모듈을 결합(각 모듈의 Hilt 바인딩이 그래프에 들어오도록 의존)
     implementation(project(":feature:timer"))
     implementation(project(":core:platform"))
+    implementation(project(":core:timersession"))
+    // 앱 수명 스코프 provide에 필요(도메인 타입은 직접 참조하지 않음 — 세션 결선은 timersession으로 이동)
+    implementation(libs.kotlinx.coroutines.core)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.androidx.activity.compose)
