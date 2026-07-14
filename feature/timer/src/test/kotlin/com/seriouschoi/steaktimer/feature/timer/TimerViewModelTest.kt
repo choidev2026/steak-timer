@@ -19,6 +19,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+private const val INTERVAL = 60_000L
+
 /** 필요할 때 경과를 흘려보내는 테스트용 엔진. */
 private class FakeTimerEngine : TimerEngine {
     private val shared = MutableSharedFlow<Long>(extraBufferCapacity = 8)
@@ -46,10 +48,28 @@ class TimerViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     @Test
+    fun `초기엔 설정 화면, Start하면 벗어난다`() =
+        runTest(mainDispatcher.scheduler) {
+            val vm = TimerViewModel(FakeTimerEngine(), FakeHaptic())
+            val job = backgroundScope.launch { vm.uiState.collect { } }
+            runCurrent()
+
+            assertTrue(vm.uiState.value.showSetup) // 초기 Idle → 설정
+
+            vm.dispatch(TimerUiIntent.Start(INTERVAL))
+            runCurrent()
+            assertFalse(vm.uiState.value.showSetup) // Running → 타이머 화면
+            assertEquals(formatMmSs(INTERVAL), vm.uiState.value.timeText)
+
+            job.cancel()
+        }
+
+    @Test
     fun `LongPress는 종료확인을 띄우고 CancelStop은 직전 상태로 복귀시킨다`() =
         runTest(mainDispatcher.scheduler) {
             val vm = TimerViewModel(FakeTimerEngine(), FakeHaptic())
             val job = backgroundScope.launch { vm.uiState.collect { } }
+            vm.dispatch(TimerUiIntent.Start(INTERVAL))
             runCurrent()
 
             assertFalse(vm.uiState.value.showStopConfirm)
@@ -70,12 +90,12 @@ class TimerViewModelTest {
         runTest(mainDispatcher.scheduler) {
             val engine = FakeTimerEngine()
             val haptic = FakeHaptic()
-            TimerViewModel(engine, haptic) // init에서 기본 간격(DEFAULT_INTERVAL_MS)으로 자동 start → Running
+            val vm = TimerViewModel(engine, haptic)
+            vm.dispatch(TimerUiIntent.Start(INTERVAL))
             runCurrent()
-            assertEquals(0, haptic.startCount) // 아직 Running(알림 아님)
+            assertEquals(0, haptic.startCount) // Running, 아직 알림 아님
 
-            // 기본 간격만큼 흘리면 remaining 0 → Alerting 진입
-            engine.emit(TimerViewModel.DEFAULT_INTERVAL_MS)
+            engine.emit(INTERVAL) // 인터벌만큼 흘리면 remaining 0 → Alerting
             runCurrent()
             assertEquals(1, haptic.startCount)
             assertEquals(0, haptic.stopCount)
@@ -87,9 +107,10 @@ class TimerViewModelTest {
             val engine = FakeTimerEngine()
             val haptic = FakeHaptic()
             val vm = TimerViewModel(engine, haptic)
+            vm.dispatch(TimerUiIntent.Start(INTERVAL))
             runCurrent()
 
-            engine.emit(TimerViewModel.DEFAULT_INTERVAL_MS) // 기본 간격만큼 흘려 Alerting 진입
+            engine.emit(INTERVAL) // Alerting
             runCurrent()
             assertEquals(1, haptic.startCount)
 

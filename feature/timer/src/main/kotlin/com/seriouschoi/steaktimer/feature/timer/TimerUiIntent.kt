@@ -5,6 +5,9 @@ package com.seriouschoi.steaktimer.feature.timer
  * (도메인 TimerIntent의 Tick/Start 같은 엔진·시스템 입력은 여기 없음 → 계층 분리)
  */
 sealed interface TimerUiIntent {
+    /** 설정 화면에서 간격을 골라 시작. */
+    data class Start(val intervalMs: Long) : TimerUiIntent
+
     /** 짧은 탭. 실행 중=조기 넘기기, 알림 중=다음 인터벌. */
     data object Tap : TimerUiIntent
 

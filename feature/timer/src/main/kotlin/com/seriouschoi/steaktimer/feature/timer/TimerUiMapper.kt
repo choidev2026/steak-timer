@@ -4,9 +4,10 @@ import com.seriouschoi.steaktimer.domain.SteakTimerState
 
 /** 도메인 상태 → 표시 전용 상태. */
 fun SteakTimerState.toUiState(): TimerUiState = when (this) {
-    is SteakTimerState.Idle -> TimerUiState.INITIAL
+    is SteakTimerState.Idle -> TimerUiState.INITIAL // showSetup = true
 
     is SteakTimerState.Running -> TimerUiState(
+        showSetup = false,
         timeText = formatMmSs(remainingMs),
         progress = if (intervalMs <= 0L) 0f else (remainingMs.toFloat() / intervalMs).coerceIn(0f, 1f),
         isVibrating = false,
@@ -15,6 +16,7 @@ fun SteakTimerState.toUiState(): TimerUiState = when (this) {
     )
 
     is SteakTimerState.Alerting -> TimerUiState(
+        showSetup = false,
         timeText = "뒤집기",
         progress = 0f,
         isVibrating = true,
@@ -23,12 +25,4 @@ fun SteakTimerState.toUiState(): TimerUiState = when (this) {
     )
 
     is SteakTimerState.ConfirmStop -> resumeTo.toUiState().copy(showStopConfirm = true)
-}
-
-/** 남은 밀리초를 mm:ss로. 카운트다운 느낌을 위해 올림(1ms도 1초로 표시). */
-private fun formatMmSs(ms: Long): String {
-    val totalSec = ((ms + 999) / 1000).coerceAtLeast(0)
-    val m = totalSec / 60
-    val s = totalSec % 60
-    return "%02d:%02d".format(m, s)
 }
