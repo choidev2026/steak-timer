@@ -23,4 +23,5 @@ rootProject.name = "SteakTimer"
 include(":app")
 include(":core:domain")
 include(":core:platform")
+include(":core:timersession")
 include(":feature:timer")

@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.seriouschoi.steaktimer.domain.Haptic
 import com.seriouschoi.steaktimer.domain.SteakTimerSession
 import com.seriouschoi.steaktimer.domain.SteakTimerState
-import com.seriouschoi.steaktimer.domain.TimerEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,11 +17,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TimerViewModel @Inject constructor(
-    engine: TimerEngine,
+    // 세션은 더 이상 ViewModel이 소유하지 않는다. 앱 스코프 싱글턴을 주입받아
+    // 화면 수명보다 오래 살게 한다(#16). Phase 7에서 서비스가 같은 세션을 넘겨받는다.
+    private val session: SteakTimerSession,
     private val haptic: Haptic,
 ) : ViewModel() {
-
-    private val session = SteakTimerSession(engine, viewModelScope)
 
     val uiState: StateFlow<TimerUiState> = session.state
         .map { it.toUiState() }
