@@ -8,7 +8,7 @@ fun SteakTimerState.toUiState(): TimerUiState = when (this) {
 
     is SteakTimerState.Running -> TimerUiState(
         showSetup = false,
-        timeText = formatMmSs(remainingMs),
+        timeText = TimeFormat.mmSs(remainingMs),
         progress = if (intervalMs <= 0L) 0f else (remainingMs.toFloat() / intervalMs).coerceIn(0f, 1f),
         isVibrating = false,
         hint = "",

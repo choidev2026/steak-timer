@@ -64,7 +64,7 @@ internal fun SetupContent(
                 )
             }
             Text(
-                text = formatMmSs(seconds * 1000L),
+                text = TimeFormat.mmSs(seconds * 1000L),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.display3,
                 modifier = Modifier.weight(1f),
