@@ -37,6 +37,7 @@ class TimerViewModel @Inject constructor(
 
     /** 화면에서 온 UI 인텐트를 세션 입력으로 발행한다. 단일 진입점. */
     fun dispatch(intent: TimerUiIntent) = when (intent) {
+        is TimerUiIntent.Start -> session.start(intent.intervalMs)
         TimerUiIntent.Tap -> session.tap()
         TimerUiIntent.LongPress -> session.longPress()
         TimerUiIntent.ConfirmStop -> session.confirmStop()
@@ -44,9 +45,6 @@ class TimerViewModel @Inject constructor(
     }
 
     init {
-        // Phase 3 데모용: 설정 화면(Phase 6)이 생기기 전까지 기본 간격으로 자동 시작.
-        session.start(DEFAULT_INTERVAL_MS)
-
         // 진동 구동(표현 계층 side-effect). Alerting 진입 → 시작, 이탈 → 정지.
         // dropWhile로 첫 알림 전의 비-Alerting 상태는 흘려보내 불필요한 stop 호출을 막는다.
         // 참고: 화면 꺼짐/AOD에서의 신뢰성은 Phase 7(Foreground Service)에서 서비스가 넘겨받는다.
@@ -59,11 +57,5 @@ class TimerViewModel @Inject constructor(
                     if (alerting) haptic.startAlert() else haptic.stop()
                 }
         }
-    }
-
-    companion object {
-        // Phase 3 데모용 기본 간격. Phase 6 설정 화면이 생기면 대체된다.
-        // 테스트가 'Alerting까지 흘릴 양'을 이 값으로 참조할 수 있게 internal.
-        internal const val DEFAULT_INTERVAL_MS = 10_000L
     }
 }

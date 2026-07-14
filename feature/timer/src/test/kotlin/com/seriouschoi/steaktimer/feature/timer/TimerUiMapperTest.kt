@@ -15,6 +15,7 @@ class TimerUiMapperTest {
         assertEquals(0.8f, ui.progress)
         assertFalse(ui.isVibrating)
         assertFalse(ui.showStopConfirm)
+        assertFalse(ui.showSetup) // Running은 타이머 화면
     }
 
     @Test
@@ -34,7 +35,9 @@ class TimerUiMapperTest {
     }
 
     @Test
-    fun `Idle은 초기 표시`() {
-        assertEquals(TimerUiState.INITIAL, SteakTimerState.Idle.toUiState())
+    fun `Idle은 설정 화면(초기 표시)`() {
+        val ui = SteakTimerState.Idle.toUiState()
+        assertEquals(TimerUiState.INITIAL, ui)
+        assertTrue(ui.showSetup)
     }
 }
