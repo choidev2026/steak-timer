@@ -35,6 +35,7 @@ dependencies {
     implementation(libs.compose.foundation)
     implementation(libs.wear.compose.material)
     implementation(libs.wear.compose.foundation)
+    implementation(libs.wear.compose.navigation)
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.hilt.navigation.compose)
 

@@ -10,14 +10,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.ChipDefaults
@@ -30,13 +29,36 @@ import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import androidx.wear.tooling.preview.devices.WearDevices
 
-/** 뒤집기 간격을 고르고 시작하는 설정 화면. 10초 스텝(10초~10분). */
+/**
+ * 설정 화면. 간격을 고르고 시작한다. 시작하면 [onStarted]로 타이머 화면 전환을 알린다.
+ */
+@Composable
+fun SetupScreen(
+    onStarted: () -> Unit,
+    viewModel: SetupViewModel = hiltViewModel(),
+) {
+    val ui by viewModel.uiState.collectAsStateWithLifecycle()
+    Scaffold(timeText = { TimeText() }) {
+        SetupContent(
+            timeText = ui.timeText,
+            onDecrease = { viewModel.dispatch(SetupUiIntent.Decrease) },
+            onIncrease = { viewModel.dispatch(SetupUiIntent.Increase) },
+            onStart = {
+                viewModel.dispatch(SetupUiIntent.Start)
+                onStarted()
+            },
+        )
+    }
+}
+
+/** 표시 전용 설정 UI. 10초 스텝(10초~10분). 상태는 [SetupViewModel]이 소유한다. */
 @Composable
 internal fun SetupContent(
-    onStart: (Long) -> Unit,
+    timeText: String,
+    onDecrease: () -> Unit,
+    onIncrease: () -> Unit,
+    onStart: () -> Unit,
 ) {
-    var seconds by rememberSaveable { mutableIntStateOf(DEFAULT_SETUP_SECONDS) }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -53,7 +75,7 @@ internal fun SetupContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Button(
-                onClick = { seconds = (seconds - STEP_SECONDS).coerceAtLeast(MIN_SECONDS) },
+                onClick = onDecrease,
                 colors = ButtonDefaults.secondaryButtonColors(),
                 modifier = Modifier.size(ButtonDefaults.ExtraSmallButtonSize),
             ) {
@@ -64,13 +86,13 @@ internal fun SetupContent(
                 )
             }
             Text(
-                text = TimeFormat.mmSs(seconds * 1000L),
+                text = timeText,
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.display3,
                 modifier = Modifier.weight(1f),
             )
             Button(
-                onClick = { seconds = (seconds + STEP_SECONDS).coerceAtMost(MAX_SECONDS) },
+                onClick = onIncrease,
                 colors = ButtonDefaults.secondaryButtonColors(),
                 modifier = Modifier.size(ButtonDefaults.ExtraSmallButtonSize),
             ) {
@@ -90,7 +112,7 @@ internal fun SetupContent(
             horizontalArrangement = Arrangement.Center,
         ) {
             CompactChip(
-                onClick = { onStart(seconds * 1000L) },
+                onClick = onStart,
                 label = { Text("시작") },
                 colors = ChipDefaults.primaryChipColors(),
             )
@@ -98,15 +120,10 @@ internal fun SetupContent(
     }
 }
 
-private const val DEFAULT_SETUP_SECONDS = 60   // 기본 1분
-private const val MIN_SECONDS = 10
-private const val MAX_SECONDS = 600            // 10분
-private const val STEP_SECONDS = 10
-
 @Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
 @Composable
 private fun SetupPreview() {
     Scaffold(timeText = { TimeText() }) {
-        SetupContent(onStart = {})
+        SetupContent(timeText = "01:00", onDecrease = {}, onIncrease = {}, onStart = {})
     }
 }
