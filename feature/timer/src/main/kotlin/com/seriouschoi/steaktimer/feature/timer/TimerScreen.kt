@@ -41,14 +41,18 @@ private fun TimerContent(
     onIntent: (TimerUiIntent) -> Unit,
 ) {
     Scaffold(timeText = { TimeText() }) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            TimerBody(ui = ui, onIntent = onIntent)
+        if (ui.showSetup) {
+            SetupContent(onStart = { onIntent(TimerUiIntent.Start(it)) })
+        } else {
+            Box(modifier = Modifier.fillMaxSize()) {
+                TimerBody(ui = ui, onIntent = onIntent)
 
-            if (ui.showStopConfirm) {
-                StopConfirmOverlay(
-                    onStop = { onIntent(TimerUiIntent.ConfirmStop) },
-                    onCancel = { onIntent(TimerUiIntent.CancelStop) },
-                )
+                if (ui.showStopConfirm) {
+                    StopConfirmOverlay(
+                        onStop = { onIntent(TimerUiIntent.ConfirmStop) },
+                        onCancel = { onIntent(TimerUiIntent.CancelStop) },
+                    )
+                }
             }
         }
     }
@@ -143,7 +147,7 @@ private fun StopConfirmOverlay(
 @Composable
 private fun TimerContentRunningPreview() {
     TimerContent(
-        ui = TimerUiState(timeText = "00:08", progress = 0.8f, isVibrating = false, hint = "", showStopConfirm = false),
+        ui = TimerUiState(showSetup = false, timeText = "00:08", progress = 0.8f, isVibrating = false, hint = "", showStopConfirm = false),
         onIntent = {},
     )
 }
@@ -152,7 +156,7 @@ private fun TimerContentRunningPreview() {
 @Composable
 private fun StopConfirmPreview() {
     TimerContent(
-        ui = TimerUiState(timeText = "00:05", progress = 0.5f, isVibrating = false, hint = "", showStopConfirm = true),
+        ui = TimerUiState(showSetup = false, timeText = "00:05", progress = 0.5f, isVibrating = false, hint = "", showStopConfirm = true),
         onIntent = {},
     )
 }
