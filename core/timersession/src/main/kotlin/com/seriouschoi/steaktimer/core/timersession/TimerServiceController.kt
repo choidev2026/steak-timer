@@ -41,17 +41,24 @@ class TimerServiceController @Inject constructor(
         scope.launch {
             var prev: SteakTimerState? = null
             session.state.collect { cur ->
-                val enteringRunning = cur is SteakTimerState.Running &&
-                    (prev !is SteakTimerState.Running || (prev as SteakTimerState.Running).cycle != cur.cycle)
-                val leavingRunning = cur !is SteakTimerState.Running && prev is SteakTimerState.Running
                 when {
-                    enteringRunning -> alarmScheduler.scheduleAfter((cur as SteakTimerState.Running).remainingMs)
-                    leavingRunning -> alarmScheduler.cancel()
+                    enteringRunning(prev, cur) ->
+                        alarmScheduler.scheduleAfter((cur as SteakTimerState.Running).remainingMs)
+                    leavingRunning(prev, cur) ->
+                        alarmScheduler.cancel()
                 }
                 prev = cur
             }
         }
     }
+
+    /** 새 러닝 에피소드 진입인가 — 비-Running에서 오거나, cycle이 바뀐 조기 뒤집기. (틱은 제외) */
+    private fun enteringRunning(prev: SteakTimerState?, cur: SteakTimerState): Boolean =
+        cur is SteakTimerState.Running &&
+            (prev !is SteakTimerState.Running || prev.cycle != cur.cycle)
+
+    private fun leavingRunning(prev: SteakTimerState?, cur: SteakTimerState): Boolean =
+        cur !is SteakTimerState.Running && prev is SteakTimerState.Running
 
     private fun startService() {
         context.startForegroundService(Intent(context, TimerForegroundService::class.java))
