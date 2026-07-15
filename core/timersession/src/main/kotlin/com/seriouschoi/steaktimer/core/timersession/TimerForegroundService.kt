@@ -76,6 +76,10 @@ class TimerForegroundService : Service() {
     override fun onDestroy() {
         haptic.stop()
         releaseWakeLock()
+        // 포그라운드 알림을 명시적으로 제거. notify()로 갱신해온 FGS 알림은 서비스 종료만으론
+        // 자동 삭제가 안 돼 워치페이스 아이콘/알림이 남는다 → 여기서 확실히 내린다.
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        notificationManager.cancel(NOTIFICATION_ID)
         scope.cancel()
         super.onDestroy()
     }
