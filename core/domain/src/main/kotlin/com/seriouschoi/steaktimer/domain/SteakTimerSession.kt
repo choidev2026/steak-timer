@@ -48,6 +48,8 @@ class SteakTimerSession(
     }
 
     fun start(intervalMs: Long) = dispatch(TimerIntent.Start(intervalMs))
+    /** 예약된 알람이 인터벌 완주를 알릴 때 호출(Phase 7). Running → Alerting. */
+    fun reachDeadline() = dispatch(TimerIntent.Deadline)
     fun advance() = dispatch(TimerIntent.Advance)
     fun requestStop() = dispatch(TimerIntent.RequestStop)
     fun confirmStop() = dispatch(TimerIntent.ConfirmStop)

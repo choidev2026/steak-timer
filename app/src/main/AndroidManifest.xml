@@ -3,8 +3,14 @@
 
     <uses-feature android:name="android.hardware.type.watch" />
 
-    <!-- 이후 Phase(화면 꺼짐 대응)에서 사용할 예정. 뼈대 단계부터 선언만 해둠. -->
+    <!-- 알림(Alerting) 동안 CPU 유지(부분 WakeLock) -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Phase 7: 타이머 실행 동안 프로세스 유지용 포그라운드 서비스 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 정확한 완주 알람(setAlarmClock). 알람/타이머 앱이라 USE_EXACT_ALARM은 설치 시 자동 허용 -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <application
         android:name=".SteakTimerApp"
@@ -33,5 +39,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 타이머 실행 동안 프로세스 유지 + 알림 진동 구동 + 완주 알람 수신(:core:timersession) -->
+        <service
+            android:name="com.seriouschoi.steaktimer.core.timersession.TimerForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="interval_cooking_timer" />
+        </service>
     </application>
 </manifest>
