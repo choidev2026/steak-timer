@@ -42,7 +42,7 @@ class SteakTimerSessionTest {
     }
 
     @Test
-    fun `Alerting에서 tap하면 다음 인터벌로 엔진 재구독`() = runTest {
+    fun `Alerting에서 advance하면 다음 인터벌로 엔진 재구독`() = runTest {
         val fake = FakeTimerEngine()
         val session = SteakTimerSession(fake, backgroundScope, tickPeriodMs = 1000)
 
@@ -50,7 +50,7 @@ class SteakTimerSessionTest {
         fake.shared.emit(INTERVAL); runCurrent() // 한 방에 완주 -> Alerting
         assertEquals(Alerting(INTERVAL, cycle = 0), session.state.value)
 
-        session.tap(); runCurrent() // 정상 뒤집기 -> Running cycle 1, 재구독
+        session.advance(); runCurrent() // 정상 뒤집기 -> Running cycle 1, 재구독
         assertEquals(Running(INTERVAL, INTERVAL, cycle = 1), session.state.value)
 
         fake.shared.emit(1000); runCurrent()
@@ -63,7 +63,7 @@ class SteakTimerSessionTest {
         val session = SteakTimerSession(fake, backgroundScope, tickPeriodMs = 1000)
 
         session.start(INTERVAL); runCurrent()
-        session.longPress(); runCurrent() // Running -> ConfirmStop, 구독 중단
+        session.requestStop(); runCurrent() // Running -> ConfirmStop, 구독 중단
         val confirm = ConfirmStop(resumeTo = Running(INTERVAL, INTERVAL, cycle = 0))
         assertEquals(confirm, session.state.value)
 

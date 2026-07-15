@@ -1,15 +1,15 @@
 package com.seriouschoi.steaktimer.feature.timer
 
 /**
- * 화면에서 발행하는 UI 인텐트. **사용자가 실제로 낼 수 있는 것만** 담는다.
- * (도메인 TimerIntent의 Tick/Start 같은 엔진·시스템 입력은 여기 없음 → 계층 분리)
+ * 화면에서 발행하는 UI 인텐트. **사용자 입력 메커니즘(버튼/탭)** 단위로 담는다.
+ * ViewModel이 이걸 도메인 의미(TimerIntent.Advance/RequestStop/...)로 번역한다.
  */
 sealed interface TimerUiIntent {
-    /** 짧은 탭. 실행 중=조기 넘기기, 알림 중=다음 인터벌. */
-    data object Tap : TimerUiIntent
+    /** 건너뛰기 버튼, 또는 알림 중 화면 전체 탭. → 도메인 Advance. */
+    data object Skip : TimerUiIntent
 
-    /** 롱프레스. 종료 확인으로 진입(Running에서만 의미). */
-    data object LongPress : TimerUiIntent
+    /** 정지 버튼. → 도메인 RequestStop(종료 확인 진입). */
+    data object Stop : TimerUiIntent
 
     /** 종료 확인 오버레이의 '종료'. */
     data object ConfirmStop : TimerUiIntent
