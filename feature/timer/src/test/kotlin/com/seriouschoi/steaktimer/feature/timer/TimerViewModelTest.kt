@@ -48,20 +48,44 @@ class TimerViewModelTest {
     @AfterTest
     fun tearDown() = Dispatchers.resetMain()
 
+    // 세션은 이제 주입 대상. 테스트에선 test 스케줄러에 묶인 backgroundScope로 만들어 넣는다.
+    // 시작(start)은 UI 인텐트가 아니라 세션에 직접 발행한다(설정 화면 몫이므로).
+
     @Test
-    fun `초기엔 설정 화면, Start하면 벗어난다`() =
+    fun `세션이 Running이면 타이머 화면 상태를 노출한다`() =
         runTest(mainDispatcher.scheduler) {
-            // 세션은 이제 주입 대상. 테스트에선 test 스케줄러에 묶인 backgroundScope로 만들어 넣는다.
-            val vm = TimerViewModel(SteakTimerSession(FakeTimerEngine(), backgroundScope), FakeHaptic())
+            val session = SteakTimerSession(FakeTimerEngine(), backgroundScope)
+            val vm = TimerViewModel(session, FakeHaptic())
             val job = backgroundScope.launch { vm.uiState.collect { } }
             runCurrent()
 
-            assertTrue(vm.uiState.value.showSetup) // 초기 Idle → 설정
+            assertTrue(vm.uiState.value.isIdle) // 초기 Idle
 
-            vm.dispatch(TimerUiIntent.Start(INTERVAL))
+            session.start(INTERVAL)
             runCurrent()
-            assertFalse(vm.uiState.value.showSetup) // Running → 타이머 화면
+            assertFalse(vm.uiState.value.isIdle) // Running → 타이머 진행
             assertEquals(TimeFormat.mmSs(INTERVAL), vm.uiState.value.timeText)
+
+            job.cancel()
+        }
+
+    @Test
+    fun `정지 확정 시 isIdle이 되어 화면 이탈을 알린다`() =
+        runTest(mainDispatcher.scheduler) {
+            val session = SteakTimerSession(FakeTimerEngine(), backgroundScope)
+            val vm = TimerViewModel(session, FakeHaptic())
+            val job = backgroundScope.launch { vm.uiState.collect { } }
+            session.start(INTERVAL)
+            runCurrent()
+            assertFalse(vm.uiState.value.isIdle)
+
+            vm.dispatch(TimerUiIntent.LongPress)
+            runCurrent()
+            assertTrue(vm.uiState.value.showStopConfirm)
+
+            vm.dispatch(TimerUiIntent.ConfirmStop)
+            runCurrent()
+            assertTrue(vm.uiState.value.isIdle) // 정지 → 설정 화면 복귀 신호
 
             job.cancel()
         }
@@ -69,10 +93,10 @@ class TimerViewModelTest {
     @Test
     fun `LongPress는 종료확인을 띄우고 CancelStop은 직전 상태로 복귀시킨다`() =
         runTest(mainDispatcher.scheduler) {
-            // 세션은 이제 주입 대상. 테스트에선 test 스케줄러에 묶인 backgroundScope로 만들어 넣는다.
-            val vm = TimerViewModel(SteakTimerSession(FakeTimerEngine(), backgroundScope), FakeHaptic())
+            val session = SteakTimerSession(FakeTimerEngine(), backgroundScope)
+            val vm = TimerViewModel(session, FakeHaptic())
             val job = backgroundScope.launch { vm.uiState.collect { } }
-            vm.dispatch(TimerUiIntent.Start(INTERVAL))
+            session.start(INTERVAL)
             runCurrent()
 
             assertFalse(vm.uiState.value.showStopConfirm)
@@ -84,6 +108,7 @@ class TimerViewModelTest {
             vm.dispatch(TimerUiIntent.CancelStop)
             runCurrent()
             assertFalse(vm.uiState.value.showStopConfirm)
+            assertFalse(vm.uiState.value.isIdle) // 취소는 실행 상태로 복귀
 
             job.cancel()
         }
@@ -93,8 +118,9 @@ class TimerViewModelTest {
         runTest(mainDispatcher.scheduler) {
             val engine = FakeTimerEngine()
             val haptic = FakeHaptic()
-            val vm = TimerViewModel(SteakTimerSession(engine, backgroundScope), haptic)
-            vm.dispatch(TimerUiIntent.Start(INTERVAL))
+            val session = SteakTimerSession(engine, backgroundScope)
+            val vm = TimerViewModel(session, haptic)
+            session.start(INTERVAL)
             runCurrent()
             assertEquals(0, haptic.startCount) // Running, 아직 알림 아님
 
@@ -109,8 +135,9 @@ class TimerViewModelTest {
         runTest(mainDispatcher.scheduler) {
             val engine = FakeTimerEngine()
             val haptic = FakeHaptic()
-            val vm = TimerViewModel(SteakTimerSession(engine, backgroundScope), haptic)
-            vm.dispatch(TimerUiIntent.Start(INTERVAL))
+            val session = SteakTimerSession(engine, backgroundScope)
+            val vm = TimerViewModel(session, haptic)
+            session.start(INTERVAL)
             runCurrent()
 
             engine.emit(INTERVAL) // Alerting

@@ -31,12 +31,15 @@ class TimerViewModel @Inject constructor(
             // 화면 회전(config change)이나 짧은 백그라운드처럼 순간적으로 구독이 끊길 때
             // 상위 flow를 재시작하지 않게 하는 관용값. 오래 떠나면 멈춰 자원을 아낀다.
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = TimerUiState.INITIAL,
+            // 초기값은 하드코딩된 INITIAL이 아니라 '지금 세션 상태'로 잡는다.
+            // 타이머 화면은 세션이 Running일 때 진입하므로, 첫 프레임부터 isIdle=false여야
+            // "막 진입했는데 isIdle=true라 곧장 설정 화면으로 튕기는" 오작동을 막는다.
+            initialValue = session.state.value.toUiState(),
         )
 
-    /** 화면에서 온 UI 인텐트를 세션 입력으로 발행한다. 단일 진입점. */
+    /** 화면에서 온 UI 인텐트를 세션 입력으로 발행한다. 단일 진입점.
+     *  Start는 여기 없다 — 시작은 설정 화면(SetupViewModel)이 세션에 직접 발행한다. */
     fun dispatch(intent: TimerUiIntent) = when (intent) {
-        is TimerUiIntent.Start -> session.start(intent.intervalMs)
         TimerUiIntent.Tap -> session.tap()
         TimerUiIntent.LongPress -> session.longPress()
         TimerUiIntent.ConfirmStop -> session.confirmStop()
