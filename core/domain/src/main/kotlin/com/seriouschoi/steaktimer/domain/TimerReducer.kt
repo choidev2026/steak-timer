@@ -37,6 +37,8 @@ fun SteakTimerState.reduce(intent: TimerIntent): SteakTimerState = when (this) {
             remainingMs = intervalMs,
             cycle = cycle + 1,
         )
+        // 예약된 알람이 알린 '인터벌 완주' — 남은 시간과 무관하게 즉시 Alerting
+        is TimerIntent.Deadline -> Alerting(intervalMs = intervalMs, cycle = cycle)
         // 종료 확인은 Running에서만 받는다
         is TimerIntent.RequestStop -> ConfirmStop(resumeTo = this)
         else -> this

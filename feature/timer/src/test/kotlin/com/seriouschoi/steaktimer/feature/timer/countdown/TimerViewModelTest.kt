@@ -2,7 +2,6 @@ package com.seriouschoi.steaktimer.feature.timer.countdown
 
 import com.seriouschoi.steaktimer.feature.timer.TimeFormat
 
-import com.seriouschoi.steaktimer.domain.Haptic
 import com.seriouschoi.steaktimer.domain.SteakTimerSession
 import com.seriouschoi.steaktimer.domain.TimerEngine
 import kotlinx.coroutines.Dispatchers
@@ -32,13 +31,8 @@ private class FakeTimerEngine : TimerEngine {
     suspend fun emit(ms: Long) = shared.emit(ms)
 }
 
-/** 진동 호출을 세는 테스트용 Haptic. */
-private class FakeHaptic : Haptic {
-    var startCount = 0
-    var stopCount = 0
-    override fun startAlert() { startCount++ }
-    override fun stop() { stopCount++ }
-}
+// 진동 구동은 이제 ViewModel이 아니라 Foreground Service 몫이라 여기서 다루지 않는다.
+// 진동 트리거 로직은 :core:timersession HapticDriverTest가 검증한다.
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TimerViewModelTest {
@@ -51,14 +45,14 @@ class TimerViewModelTest {
     @AfterTest
     fun tearDown() = Dispatchers.resetMain()
 
-    // 세션은 이제 주입 대상. 테스트에선 test 스케줄러에 묶인 backgroundScope로 만들어 넣는다.
+    // 세션은 주입 대상. 테스트에선 test 스케줄러에 묶인 backgroundScope로 만들어 넣는다.
     // 시작(start)은 UI 인텐트가 아니라 세션에 직접 발행한다(설정 화면 몫이므로).
 
     @Test
     fun `세션이 Running이면 타이머 화면 상태를 노출한다`() =
         runTest(mainDispatcher.scheduler) {
             val session = SteakTimerSession(FakeTimerEngine(), backgroundScope)
-            val vm = TimerViewModel(session, FakeHaptic())
+            val vm = TimerViewModel(session)
             val job = backgroundScope.launch { vm.uiState.collect { } }
             runCurrent()
 
@@ -76,7 +70,7 @@ class TimerViewModelTest {
     fun `정지 확정 시 isIdle이 되어 화면 이탈을 알린다`() =
         runTest(mainDispatcher.scheduler) {
             val session = SteakTimerSession(FakeTimerEngine(), backgroundScope)
-            val vm = TimerViewModel(session, FakeHaptic())
+            val vm = TimerViewModel(session)
             val job = backgroundScope.launch { vm.uiState.collect { } }
             session.start(INTERVAL)
             runCurrent()
@@ -97,7 +91,7 @@ class TimerViewModelTest {
     fun `Stop은 종료확인을 띄우고 CancelStop은 직전 상태로 복귀시킨다`() =
         runTest(mainDispatcher.scheduler) {
             val session = SteakTimerSession(FakeTimerEngine(), backgroundScope)
-            val vm = TimerViewModel(session, FakeHaptic())
+            val vm = TimerViewModel(session)
             val job = backgroundScope.launch { vm.uiState.collect { } }
             session.start(INTERVAL)
             runCurrent()
@@ -114,41 +108,5 @@ class TimerViewModelTest {
             assertFalse(vm.uiState.value.isIdle) // 취소는 실행 상태로 복귀
 
             job.cancel()
-        }
-
-    @Test
-    fun `Alerting 진입 시 진동이 시작된다`() =
-        runTest(mainDispatcher.scheduler) {
-            val engine = FakeTimerEngine()
-            val haptic = FakeHaptic()
-            val session = SteakTimerSession(engine, backgroundScope)
-            val vm = TimerViewModel(session, haptic)
-            session.start(INTERVAL)
-            runCurrent()
-            assertEquals(0, haptic.startCount) // Running, 아직 알림 아님
-
-            engine.emit(INTERVAL) // 인터벌만큼 흘리면 remaining 0 → Alerting
-            runCurrent()
-            assertEquals(1, haptic.startCount)
-            assertEquals(0, haptic.stopCount)
-        }
-
-    @Test
-    fun `Skip하면 Alerting을 벗어나 진동이 정지된다`() =
-        runTest(mainDispatcher.scheduler) {
-            val engine = FakeTimerEngine()
-            val haptic = FakeHaptic()
-            val session = SteakTimerSession(engine, backgroundScope)
-            val vm = TimerViewModel(session, haptic)
-            session.start(INTERVAL)
-            runCurrent()
-
-            engine.emit(INTERVAL) // Alerting
-            runCurrent()
-            assertEquals(1, haptic.startCount)
-
-            vm.dispatch(TimerUiIntent.Skip) // Alerting → 다음 Running
-            runCurrent()
-            assertEquals(1, haptic.stopCount)
         }
 }
