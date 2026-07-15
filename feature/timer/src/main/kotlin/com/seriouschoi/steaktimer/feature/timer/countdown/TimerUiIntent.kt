@@ -1,4 +1,4 @@
-package com.seriouschoi.steaktimer.feature.timer
+package com.seriouschoi.steaktimer.feature.timer.countdown
 
 /**
  * 화면에서 발행하는 UI 인텐트. **사용자 입력 메커니즘(버튼/탭)** 단위로 담는다.

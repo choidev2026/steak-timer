@@ -1,4 +1,4 @@
-package com.seriouschoi.steaktimer.feature.timer
+package com.seriouschoi.steaktimer.feature.timer.setup
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

@@ -1,4 +1,6 @@
-package com.seriouschoi.steaktimer.feature.timer
+package com.seriouschoi.steaktimer.feature.timer.setup
+
+import com.seriouschoi.steaktimer.feature.timer.TimeFormat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
