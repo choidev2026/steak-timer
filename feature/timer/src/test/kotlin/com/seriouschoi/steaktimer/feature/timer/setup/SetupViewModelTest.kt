@@ -1,4 +1,4 @@
-package com.seriouschoi.steaktimer.feature.timer
+package com.seriouschoi.steaktimer.feature.timer.setup
 
 import com.seriouschoi.steaktimer.domain.SteakTimerSession
 import com.seriouschoi.steaktimer.domain.SteakTimerState
