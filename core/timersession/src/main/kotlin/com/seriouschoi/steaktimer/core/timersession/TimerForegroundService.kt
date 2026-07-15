@@ -1,30 +1,36 @@
 package com.seriouschoi.steaktimer.core.timersession
 
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.os.PowerManager
+import android.os.SystemClock
+import androidx.core.app.NotificationCompat
+import androidx.wear.ongoing.OngoingActivity
+import androidx.wear.ongoing.Status
 import com.seriouschoi.steaktimer.domain.Haptic
 import com.seriouschoi.steaktimer.domain.SteakTimerSession
+import com.seriouschoi.steaktimer.domain.SteakTimerState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * 타이머 활성 동안 프로세스를 살려두고(포그라운드 + 노티), 알림(Alerting) 동안 진동을
- * 헤드리스에서 구동하는 서비스.
+ * 타이머 활성 동안 프로세스를 살려두고(포그라운드 + Ongoing Activity), 알림(Alerting) 동안
+ * 진동을 헤드리스에서 구동하는 서비스.
  *
- * 타이밍 보장은 [TimerAlarmScheduler]의 `setAlarmClock`이 맡는다: 딥슬립으로 delay 루프가
- * 얼어붙어도 예약 시각에 시스템이 이 서비스를 [ACTION_DEADLINE]로 깨워 세션을 완주 처리한다.
- * WakeLock은 **Alerting 동안만** 잡아 진동을 유지한다(세션 내내 잡지 않아 배터리 우호적).
+ * 타이밍 보장은 [TimerAlarmScheduler]의 `setAlarmClock`이 맡는다(딥슬립을 뚫는 완주 알람).
+ * WakeLock은 Alerting 동안만 잡아 진동을 유지한다. Ongoing Activity로 실행 중 타이머를
+ * 워치페이스에 노출하고, 탭하면 앱으로 복귀한다(Step B).
  */
 @AndroidEntryPoint
 class TimerForegroundService : Service() {
@@ -37,14 +43,24 @@ class TimerForegroundService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        startForeground(NOTIFICATION_ID, buildNotification())
-        // Alerting 동안만 WakeLock + 진동. (알람이 딥슬립에서 깨운 직후에도 CPU를 유지해 진동 지속)
+        ensureChannel()
+        startForeground(NOTIFICATION_ID, buildNotification(session.state.value))
+
+        // Alerting 동안만 WakeLock + 진동.
         scope.launch {
             observeAlerting(
                 state = session.state,
                 onEnter = { acquireWakeLock(); haptic.startAlert() },
                 onLeave = { haptic.stop(); releaseWakeLock() },
             )
+        }
+        // 표시 상태(러닝 사이클/알림)가 바뀔 때만 Ongoing Activity 갱신(틱마다 X — 카운트다운은 시스템이 렌더).
+        scope.launch {
+            session.state
+                .distinctUntilChangedBy { displayKey(it) }
+                .collect { state ->
+                    notificationManager.notify(NOTIFICATION_ID, buildNotification(state))
+                }
         }
     }
 
@@ -66,6 +82,69 @@ class TimerForegroundService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    // --- 알림 / Ongoing Activity ---
+
+    private val notificationManager: NotificationManager
+        get() = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+    private fun ensureChannel() {
+        if (notificationManager.getNotificationChannel(CHANNEL_ID) == null) {
+            notificationManager.createNotificationChannel(
+                NotificationChannel(CHANNEL_ID, "타이머 실행", NotificationManager.IMPORTANCE_LOW),
+            )
+        }
+    }
+
+    /** 표시 갱신 트리거 키: 러닝은 사이클 단위(틱 제외), 알림/그 외는 하나로. */
+    private fun displayKey(state: SteakTimerState): String = when (state) {
+        is SteakTimerState.Running -> "run:${state.cycle}"
+        is SteakTimerState.Alerting -> "alert"
+        is SteakTimerState.ConfirmStop -> "confirm"
+        SteakTimerState.Idle -> "idle"
+    }
+
+    private fun buildNotification(state: SteakTimerState): android.app.Notification {
+        val contentText = when (state) {
+            is SteakTimerState.Alerting -> "뒤집기!"
+            is SteakTimerState.Running -> "${state.cycle + 1}번째 굽는 중"
+            else -> "타이머 실행 중"
+        }
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("스테이크 타이머")
+            .setContentText(contentText)
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setOngoing(true)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .apply { touchIntent()?.let { setContentIntent(it) } }
+
+        val status = when (state) {
+            // Running: 완주 시각까지 카운트다운(시스템이 초 단위 렌더 → 매 틱 갱신 불필요)
+            is SteakTimerState.Running ->
+                Status.Builder()
+                    .addTemplate("#remain#")
+                    .addPart("remain", Status.TimerPart(SystemClock.elapsedRealtime() + state.remainingMs))
+                    .build()
+            else -> Status.Builder().addTemplate(contentText).build()
+        }
+
+        val ongoing = OngoingActivity.Builder(this, NOTIFICATION_ID, builder)
+            .setStaticIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setStatus(status)
+            .apply { touchIntent()?.let { setTouchIntent(it) } }
+            .build()
+        ongoing.apply(this)
+
+        return builder.build()
+    }
+
+    /** 워치페이스 칩 탭 → 앱 복귀. 런처 인텐트로 열어 :app 클래스 참조를 피한다. */
+    private fun touchIntent(): PendingIntent? {
+        val launch = packageManager.getLaunchIntentForPackage(packageName) ?: return null
+        return PendingIntent.getActivity(this, 0, launch, PendingIntent.FLAG_IMMUTABLE)
+    }
+
+    // --- WakeLock ---
+
     private fun acquireWakeLock() {
         if (wakeLock?.isHeld == true) return
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -80,27 +159,11 @@ class TimerForegroundService : Service() {
         wakeLock = null
     }
 
-    private fun buildNotification(): Notification {
-        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (nm.getNotificationChannel(CHANNEL_ID) == null) {
-            nm.createNotificationChannel(
-                NotificationChannel(CHANNEL_ID, "타이머 실행", NotificationManager.IMPORTANCE_LOW),
-            )
-        }
-        return Notification.Builder(this, CHANNEL_ID)
-            .setContentTitle("스테이크 타이머")
-            .setContentText("타이머 실행 중")
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setOngoing(true)
-            .build()
-    }
-
     companion object {
         const val ACTION_DEADLINE = "com.seriouschoi.steaktimer.action.DEADLINE"
         private const val NOTIFICATION_ID = 1
         private const val CHANNEL_ID = "steak_timer_running"
         private const val WAKELOCK_TAG = "SteakTimer::AlertWakeLock"
-        // 안전장치: 사용자가 응답 안 해도 진동이 영원히 안 돌게 하는 상한. 정상 이탈(Alerting→해제)에서 먼저 해제됨.
-        private const val WAKELOCK_TIMEOUT_MS = 10L * 60L * 1000L // 10분
+        private const val WAKELOCK_TIMEOUT_MS = 10L * 60L * 1000L // 10분(안전장치)
     }
 }
