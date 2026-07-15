@@ -18,6 +18,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 private const val INTERVAL = 60_000L
@@ -81,7 +82,7 @@ class TimerViewModelTest {
 
             vm.dispatch(TimerUiIntent.Stop)
             runCurrent()
-            assertTrue(vm.uiState.value.showStopConfirm)
+            assertEquals(TimerAlert.ConfirmStop, vm.uiState.value.alert)
 
             vm.dispatch(TimerUiIntent.ConfirmStop)
             runCurrent()
@@ -99,15 +100,15 @@ class TimerViewModelTest {
             session.start(INTERVAL)
             runCurrent()
 
-            assertFalse(vm.uiState.value.showStopConfirm)
+            assertNull(vm.uiState.value.alert)
 
             vm.dispatch(TimerUiIntent.Stop)
             runCurrent()
-            assertTrue(vm.uiState.value.showStopConfirm)
+            assertEquals(TimerAlert.ConfirmStop, vm.uiState.value.alert)
 
             vm.dispatch(TimerUiIntent.CancelStop)
             runCurrent()
-            assertFalse(vm.uiState.value.showStopConfirm)
+            assertNull(vm.uiState.value.alert)
             assertFalse(vm.uiState.value.isIdle) // 취소는 실행 상태로 복귀
 
             job.cancel()
