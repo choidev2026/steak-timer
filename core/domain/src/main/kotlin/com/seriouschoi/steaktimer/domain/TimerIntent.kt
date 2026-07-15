@@ -12,6 +12,13 @@ sealed interface TimerIntent {
     /** 경과 시간 주입(실제 시간 공급은 TimerEngine 몫). */
     data class Tick(val elapsedMs: Long) : TimerIntent
 
+    /**
+     * 인터벌 시간이 다 됨. Running → 즉시 Alerting.
+     * 화면 꺼짐/딥슬립으로 Tick(delay 루프)이 얼어붙어도, 예약된 알람이 이걸 발행해
+     * 정확한 시각에 알림을 보장한다(Phase 7). 남은 시간 값과 무관하게 완주로 처리.
+     */
+    data object Deadline : TimerIntent
+
     /** 다음 인터벌로 넘어간다. Running=조기 뒤집기, Alerting=정상 뒤집기(다음 인터벌). */
     data object Advance : TimerIntent
 

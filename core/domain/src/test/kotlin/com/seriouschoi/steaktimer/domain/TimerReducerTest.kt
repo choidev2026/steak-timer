@@ -95,6 +95,20 @@ class TimerReducerTest {
     }
 
     @Test
+    fun `Running에서 Deadline이면 남은시간 무관하게 Alerting(cycle 유지)`() {
+        val running = Running(INTERVAL, remainingMs = 120_000, cycle = 2) // 아직 시간 많이 남음
+        val next = running.reduce(TimerIntent.Deadline)
+        assertEquals(Alerting(INTERVAL, cycle = 2), next)
+    }
+
+    @Test
+    fun `Alerting과 Idle은 Deadline을 무시한다`() {
+        val alerting = Alerting(INTERVAL, cycle = 0)
+        assertEquals(alerting, alerting.reduce(TimerIntent.Deadline))
+        assertEquals(Idle, Idle.reduce(TimerIntent.Deadline))
+    }
+
+    @Test
     fun `핵심 루프 - 시작 후 완주 뒤집기 조기 뒤집기가 cycle을 누적`() {
         var s: SteakTimerState = Idle
         s = s.reduce(TimerIntent.Start(INTERVAL))           // Running cycle 0
