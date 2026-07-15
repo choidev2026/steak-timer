@@ -1,4 +1,4 @@
-package com.seriouschoi.steaktimer.feature.timer
+package com.seriouschoi.steaktimer.feature.timer.setup
 
 /**
  * 설정 화면 표시 전용 상태. 고른 간격(초)과 그 표시 문자열만 갖는다.

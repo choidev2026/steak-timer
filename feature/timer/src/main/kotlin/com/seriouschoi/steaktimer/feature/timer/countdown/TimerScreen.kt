@@ -1,4 +1,4 @@
-package com.seriouschoi.steaktimer.feature.timer
+package com.seriouschoi.steaktimer.feature.timer.countdown
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures

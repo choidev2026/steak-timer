@@ -1,4 +1,4 @@
-package com.seriouschoi.steaktimer.feature.timer
+package com.seriouschoi.steaktimer.feature.timer.countdown
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

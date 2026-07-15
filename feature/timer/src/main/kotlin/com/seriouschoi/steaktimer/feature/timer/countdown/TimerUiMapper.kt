@@ -1,4 +1,6 @@
-package com.seriouschoi.steaktimer.feature.timer
+package com.seriouschoi.steaktimer.feature.timer.countdown
+
+import com.seriouschoi.steaktimer.feature.timer.TimeFormat
 
 import com.seriouschoi.steaktimer.domain.SteakTimerState
 
