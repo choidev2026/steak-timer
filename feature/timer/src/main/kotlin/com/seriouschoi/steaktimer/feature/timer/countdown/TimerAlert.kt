@@ -1,4 +1,4 @@
-package com.seriouschoi.steaktimer.feature.timer
+package com.seriouschoi.steaktimer.feature.timer.countdown
 
 /**
  * 타이머 화면에 뜨는 알림(오버레이) 종류. **표현 계층 개념**이다.

@@ -1,4 +1,4 @@
-package com.seriouschoi.steaktimer.feature.timer
+package com.seriouschoi.steaktimer.feature.timer.setup
 
 /** 설정 화면에서 사용자가 낼 수 있는 입력. */
 sealed interface SetupUiIntent {

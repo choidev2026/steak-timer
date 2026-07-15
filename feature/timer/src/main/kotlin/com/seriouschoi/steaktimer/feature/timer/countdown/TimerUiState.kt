@@ -1,4 +1,4 @@
-package com.seriouschoi.steaktimer.feature.timer
+package com.seriouschoi.steaktimer.feature.timer.countdown
 
 /**
  * 타이머 화면 표시 전용 상태. 도메인 개념(phase 등)은 담지 않고, "무엇을 그릴지"만 갖는다.
