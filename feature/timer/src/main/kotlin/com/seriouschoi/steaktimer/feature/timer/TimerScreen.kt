@@ -5,6 +5,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -24,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material.Chip
 import androidx.wear.compose.material.ChipDefaults
 import androidx.wear.compose.material.CircularProgressIndicator
+import androidx.wear.compose.material.CompactChip
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
@@ -58,34 +60,30 @@ private fun TimerContent(
         Box(modifier = Modifier.fillMaxSize()) {
             TimerBody(ui = ui, onIntent = onIntent)
 
-            if (ui.showStopConfirm) {
-                StopConfirmOverlay(
+            // 알림은 종류별로 자기 뷰와 상호작용을 소유한다.
+            when (ui.alert) {
+                TimerAlert.Flip -> FlipAlert(onSkip = { onIntent(TimerUiIntent.Skip) })
+                TimerAlert.ConfirmStop -> StopConfirmOverlay(
                     onStop = { onIntent(TimerUiIntent.ConfirmStop) },
                     onCancel = { onIntent(TimerUiIntent.CancelStop) },
                 )
+                null -> Unit
             }
         }
     }
 }
 
-/** 타이머 본체: 남은 시간 + 원형 progress + 탭/롱프레스 제스처. */
+/**
+ * 타이머 본체: 남은 시간(시계) + 원형 progress + 실행 중 하단 조작 버튼.
+ * 알림(Flip/ConfirmStop)이 떠 있으면 조작 버튼은 숨고, 상호작용은 각 알림 뷰가 맡는다.
+ */
 @Composable
 private fun TimerBody(
     ui: TimerUiState,
     onIntent: (TimerUiIntent) -> Unit,
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            // 종료 확인 오버레이가 떠 있으면 본체는 제스처를 받지 않는다.
-            .pointerInput(ui.showStopConfirm) {
-                if (!ui.showStopConfirm) {
-                    detectTapGestures(
-                        onTap = { onIntent(TimerUiIntent.Tap) },
-                        onLongPress = { onIntent(TimerUiIntent.LongPress) },
-                    )
-                }
-            },
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
         CircularProgressIndicator(
@@ -94,26 +92,66 @@ private fun TimerBody(
                 .fillMaxSize()
                 .padding(4.dp),
         )
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Text(
-                text = ui.timeText,
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.display1,
-            )
-            if (ui.hint.isNotEmpty()) {
-                Text(
-                    text = ui.hint,
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.caption2,
+        Text(
+            text = ui.timeText,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.display1,
+        )
+
+        // 실행 중(알림 없음)에만 하단 [정지][건너뛰기]. 정지는 필수 동작이라 숨기지 않고 노출한다(#17).
+        if (ui.alert == null) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CompactChip(
+                    onClick = { onIntent(TimerUiIntent.Stop) },
+                    label = { Text("정지") },
+                    colors = ChipDefaults.secondaryChipColors(),
+                )
+                CompactChip(
+                    onClick = { onIntent(TimerUiIntent.Skip) },
+                    label = { Text("건너뛰기") },
+                    colors = ChipDefaults.primaryChipColors(),
                 )
             }
         }
     }
 }
 
+/** "뒤집기" 알림. 탭 어디든 = 다음 인터벌(Skip). 큰 타겟으로 빠르게 해제. */
+@Composable
+private fun FlipAlert(onSkip: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.85f))
+            .pointerInput(Unit) { detectTapGestures { onSkip() } },
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = "뒤집기",
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.display2,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "탭해서 다음",
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.caption2,
+            )
+        }
+    }
+}
+
+/** 정지 확인 알림. 종료/취소 버튼으로만 닫힌다(바깥 탭 흡수). */
 @Composable
 private fun StopConfirmOverlay(
     onStop: () -> Unit,
@@ -155,9 +193,18 @@ private fun StopConfirmOverlay(
 
 @Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
 @Composable
-private fun TimerContentRunningPreview() {
+private fun TimerRunningPreview() {
     TimerContent(
-        ui = TimerUiState(isIdle = false, timeText = "00:08", progress = 0.8f, isVibrating = false, hint = "", showStopConfirm = false),
+        ui = TimerUiState(isIdle = false, timeText = "00:08", progress = 0.8f, alert = null),
+        onIntent = {},
+    )
+}
+
+@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
+@Composable
+private fun FlipAlertPreview() {
+    TimerContent(
+        ui = TimerUiState(isIdle = false, timeText = "00:00", progress = 0f, alert = TimerAlert.Flip),
         onIntent = {},
     )
 }
@@ -166,7 +213,7 @@ private fun TimerContentRunningPreview() {
 @Composable
 private fun StopConfirmPreview() {
     TimerContent(
-        ui = TimerUiState(isIdle = false, timeText = "00:05", progress = 0.5f, isVibrating = false, hint = "", showStopConfirm = true),
+        ui = TimerUiState(isIdle = false, timeText = "00:05", progress = 0.5f, alert = TimerAlert.ConfirmStop),
         onIntent = {},
     )
 }

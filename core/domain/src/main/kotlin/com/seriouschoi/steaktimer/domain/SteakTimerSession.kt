@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
  * 순수 상태기계([reduce])를 실제로 굴리는 얇은 세션 홀더.
  *
  * - 현재 상태를 [state]로 노출한다.
- * - 사용자 입력(start/tap/longPress/...)을 [dispatch]로 받아 [reduce]로 갱신한다.
+ * - 사용자 입력(start/advance/requestStop/...)을 [dispatch]로 받아 [reduce]로 갱신한다.
  * - "Running인가"만 보고 tick 구독을 켜고 끈다. 이 스위칭은 [flatMapLatest]가 담당한다.
  *
  * tick 구독을 수동 Job으로 관리하지 않는 이유:
@@ -48,8 +48,8 @@ class SteakTimerSession(
     }
 
     fun start(intervalMs: Long) = dispatch(TimerIntent.Start(intervalMs))
-    fun tap() = dispatch(TimerIntent.Tap)
-    fun longPress() = dispatch(TimerIntent.LongPress)
+    fun advance() = dispatch(TimerIntent.Advance)
+    fun requestStop() = dispatch(TimerIntent.RequestStop)
     fun confirmStop() = dispatch(TimerIntent.ConfirmStop)
     fun cancelStop() = dispatch(TimerIntent.CancelStop)
 
