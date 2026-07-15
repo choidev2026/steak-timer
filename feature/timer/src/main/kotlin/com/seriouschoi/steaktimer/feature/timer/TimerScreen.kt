@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,9 +30,22 @@ import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import androidx.wear.tooling.preview.devices.WearDevices
 
+/**
+ * 타이머 화면. 세션이 Idle로 돌아오면(정지) [onExit]로 설정 화면 복귀를 알린다.
+ */
 @Composable
-fun TimerScreen(viewModel: TimerViewModel = hiltViewModel()) {
+fun TimerScreen(
+    onExit: () -> Unit,
+    viewModel: TimerViewModel = hiltViewModel(),
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // 정지(→ Idle)되면 설정 화면으로 되돌린다. 진입 시엔 세션이 Running이라 isIdle=false이므로
+    // 곧장 튕기지 않는다(초기값을 현재 세션 상태로 잡아둔 덕분).
+    LaunchedEffect(uiState.isIdle) {
+        if (uiState.isIdle) onExit()
+    }
+
     TimerContent(ui = uiState, onIntent = viewModel::dispatch)
 }
 
@@ -41,18 +55,14 @@ private fun TimerContent(
     onIntent: (TimerUiIntent) -> Unit,
 ) {
     Scaffold(timeText = { TimeText() }) {
-        if (ui.showSetup) {
-            SetupContent(onStart = { onIntent(TimerUiIntent.Start(it)) })
-        } else {
-            Box(modifier = Modifier.fillMaxSize()) {
-                TimerBody(ui = ui, onIntent = onIntent)
+        Box(modifier = Modifier.fillMaxSize()) {
+            TimerBody(ui = ui, onIntent = onIntent)
 
-                if (ui.showStopConfirm) {
-                    StopConfirmOverlay(
-                        onStop = { onIntent(TimerUiIntent.ConfirmStop) },
-                        onCancel = { onIntent(TimerUiIntent.CancelStop) },
-                    )
-                }
+            if (ui.showStopConfirm) {
+                StopConfirmOverlay(
+                    onStop = { onIntent(TimerUiIntent.ConfirmStop) },
+                    onCancel = { onIntent(TimerUiIntent.CancelStop) },
+                )
             }
         }
     }
@@ -147,7 +157,7 @@ private fun StopConfirmOverlay(
 @Composable
 private fun TimerContentRunningPreview() {
     TimerContent(
-        ui = TimerUiState(showSetup = false, timeText = "00:08", progress = 0.8f, isVibrating = false, hint = "", showStopConfirm = false),
+        ui = TimerUiState(isIdle = false, timeText = "00:08", progress = 0.8f, isVibrating = false, hint = "", showStopConfirm = false),
         onIntent = {},
     )
 }
@@ -156,7 +166,7 @@ private fun TimerContentRunningPreview() {
 @Composable
 private fun StopConfirmPreview() {
     TimerContent(
-        ui = TimerUiState(showSetup = false, timeText = "00:05", progress = 0.5f, isVibrating = false, hint = "", showStopConfirm = true),
+        ui = TimerUiState(isIdle = false, timeText = "00:05", progress = 0.5f, isVibrating = false, hint = "", showStopConfirm = true),
         onIntent = {},
     )
 }
