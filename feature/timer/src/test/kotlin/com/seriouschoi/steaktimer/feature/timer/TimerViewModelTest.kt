@@ -79,7 +79,7 @@ class TimerViewModelTest {
             runCurrent()
             assertFalse(vm.uiState.value.isIdle)
 
-            vm.dispatch(TimerUiIntent.LongPress)
+            vm.dispatch(TimerUiIntent.Stop)
             runCurrent()
             assertTrue(vm.uiState.value.showStopConfirm)
 
@@ -91,7 +91,7 @@ class TimerViewModelTest {
         }
 
     @Test
-    fun `LongPress는 종료확인을 띄우고 CancelStop은 직전 상태로 복귀시킨다`() =
+    fun `Stop은 종료확인을 띄우고 CancelStop은 직전 상태로 복귀시킨다`() =
         runTest(mainDispatcher.scheduler) {
             val session = SteakTimerSession(FakeTimerEngine(), backgroundScope)
             val vm = TimerViewModel(session, FakeHaptic())
@@ -101,7 +101,7 @@ class TimerViewModelTest {
 
             assertFalse(vm.uiState.value.showStopConfirm)
 
-            vm.dispatch(TimerUiIntent.LongPress)
+            vm.dispatch(TimerUiIntent.Stop)
             runCurrent()
             assertTrue(vm.uiState.value.showStopConfirm)
 
@@ -131,7 +131,7 @@ class TimerViewModelTest {
         }
 
     @Test
-    fun `탭하면 Alerting을 벗어나 진동이 정지된다`() =
+    fun `Skip하면 Alerting을 벗어나 진동이 정지된다`() =
         runTest(mainDispatcher.scheduler) {
             val engine = FakeTimerEngine()
             val haptic = FakeHaptic()
@@ -144,7 +144,7 @@ class TimerViewModelTest {
             runCurrent()
             assertEquals(1, haptic.startCount)
 
-            vm.dispatch(TimerUiIntent.Tap) // Alerting → 다음 Running
+            vm.dispatch(TimerUiIntent.Skip) // Alerting → 다음 Running
             runCurrent()
             assertEquals(1, haptic.stopCount)
         }

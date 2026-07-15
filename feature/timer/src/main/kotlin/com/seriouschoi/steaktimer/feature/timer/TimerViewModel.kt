@@ -37,11 +37,11 @@ class TimerViewModel @Inject constructor(
             initialValue = session.state.value.toUiState(),
         )
 
-    /** 화면에서 온 UI 인텐트를 세션 입력으로 발행한다. 단일 진입점.
+    /** 화면 UI 인텐트(메커니즘)를 도메인 의미로 번역해 세션에 발행한다. 단일 진입점.
      *  Start는 여기 없다 — 시작은 설정 화면(SetupViewModel)이 세션에 직접 발행한다. */
     fun dispatch(intent: TimerUiIntent) = when (intent) {
-        TimerUiIntent.Tap -> session.tap()
-        TimerUiIntent.LongPress -> session.longPress()
+        TimerUiIntent.Skip -> session.advance()
+        TimerUiIntent.Stop -> session.requestStop()
         TimerUiIntent.ConfirmStop -> session.confirmStop()
         TimerUiIntent.CancelStop -> session.cancelStop()
     }

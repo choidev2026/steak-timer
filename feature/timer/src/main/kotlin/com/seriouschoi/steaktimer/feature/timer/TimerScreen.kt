@@ -5,6 +5,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -24,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material.Chip
 import androidx.wear.compose.material.ChipDefaults
 import androidx.wear.compose.material.CircularProgressIndicator
+import androidx.wear.compose.material.CompactChip
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
@@ -68,7 +70,11 @@ private fun TimerContent(
     }
 }
 
-/** 타이머 본체: 남은 시간 + 원형 progress + 탭/롱프레스 제스처. */
+/**
+ * 타이머 본체: 남은 시간 + 원형 progress.
+ * - 알림 중(진동): 화면 전체 탭 = 다음(Skip). 버튼 없이 큰 타겟으로 빠르게 해제.
+ * - 실행 중: 하단에 [정지][건너뛰기] 버튼. 정지는 필수 동작이라 숨기지 않고 노출한다(#17).
+ */
 @Composable
 private fun TimerBody(
     ui: TimerUiState,
@@ -77,13 +83,11 @@ private fun TimerBody(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            // 종료 확인 오버레이가 떠 있으면 본체는 제스처를 받지 않는다.
-            .pointerInput(ui.showStopConfirm) {
-                if (!ui.showStopConfirm) {
-                    detectTapGestures(
-                        onTap = { onIntent(TimerUiIntent.Tap) },
-                        onLongPress = { onIntent(TimerUiIntent.LongPress) },
-                    )
+            // 알림 중에만 화면 전체 탭 = 다음. 실행 중 조작은 하단 버튼이 담당한다.
+            // (종료 확인 오버레이가 떠 있으면 탭을 받지 않는다.)
+            .pointerInput(ui.isVibrating, ui.showStopConfirm) {
+                if (ui.isVibrating && !ui.showStopConfirm) {
+                    detectTapGestures(onTap = { onIntent(TimerUiIntent.Skip) })
                 }
             },
         contentAlignment = Alignment.Center,
@@ -108,6 +112,28 @@ private fun TimerBody(
                     text = ui.hint,
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.caption2,
+                )
+            }
+        }
+
+        // 실행 중(비-알림, 종료확인 아님)에만 하단 조작 버튼.
+        if (!ui.isVibrating && !ui.showStopConfirm) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CompactChip(
+                    onClick = { onIntent(TimerUiIntent.Stop) },
+                    label = { Text("정지") },
+                    colors = ChipDefaults.secondaryChipColors(),
+                )
+                CompactChip(
+                    onClick = { onIntent(TimerUiIntent.Skip) },
+                    label = { Text("건너뛰기") },
+                    colors = ChipDefaults.primaryChipColors(),
                 )
             }
         }
