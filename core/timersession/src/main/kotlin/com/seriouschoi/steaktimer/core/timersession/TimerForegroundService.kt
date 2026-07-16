@@ -114,7 +114,11 @@ class TimerForegroundService : Service() {
         }
     }
 
-    /** 뒤집기 시점에 손목만 들어도 보이는 heads-up 알림. 탭하면 앱 복귀. */
+    /**
+     * 뒤집기 시점 알림. 손목만 들어도 보이는 heads-up + **full-screen intent**로,
+     * 화면이 꺼져 있다 켜질 땐 워치페이스가 아니라 앱(뒤집기 화면)이 바로 뜨게 한다.
+     * (화면이 켜져 있으면 heads-up으로만) 탭하면 앱 복귀.
+     */
     private fun postFlipAlert() {
         val notification = NotificationCompat.Builder(this, ALERT_CHANNEL_ID)
             .setContentTitle("뒤집기!")
@@ -123,7 +127,12 @@ class TimerForegroundService : Service() {
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(false)
-            .apply { touchIntent()?.let { setContentIntent(it) } }
+            .apply {
+                touchIntent()?.let {
+                    setContentIntent(it)
+                    setFullScreenIntent(it, /* highPriority = */ true)
+                }
+            }
             .build()
         notificationManager.notify(ALERT_NOTIFICATION_ID, notification)
     }
