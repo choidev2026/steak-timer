@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- 정확한 완주 알람(setAlarmClock). 알람/타이머 앱이라 USE_EXACT_ALARM은 설치 시 자동 허용 -->
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- 뒤집기 알림이 화면 꺼짐→켜짐 시 워치페이스가 아니라 앱을 전체화면으로 띄우게(full-screen intent) -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <application
         android:name=".SteakTimerApp"
