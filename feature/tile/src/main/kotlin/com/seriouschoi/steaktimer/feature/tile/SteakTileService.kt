@@ -25,8 +25,8 @@ import com.google.common.util.concurrent.ListenableFuture
  * 타일은 살아있는 세션 상태를 표시하지 않으므로(단순 스테이크 타이머), 세션/Compose/Hilt 의존이 없고
  * 레이아웃도 완전 정적이다 — 상태 변화에 따른 갱신(requestUpdate)이 필요 없다.
  *
- * Phase A: 버튼은 프리셋 구분 없이 앱만 실행한다.
- * Phase B(예정): preset 초를 intent extra로 실어 보내 setup 화면을 그 값으로 초기화한다.
+ * 버튼을 누르면 앱을 열고, **누른 프리셋 초를 intent extra([EXTRA_PRESET_SECONDS])로 실어 보내**
+ * setup 화면이 그 값으로 초기화되게 한다(Phase B).
  *
  * ## TileService 동작 방식 (Activity/Service와 다름)
  * 타일은 우리가 직접 화면을 그리는 게 아니라, **시스템(워치의 타일 호스트)이 필요할 때
@@ -87,12 +87,12 @@ class SteakTileService : TileService() {
             .build()
 
     private fun presetButton(seconds: Int): Button =
-        Button.Builder(this, launchAppClickable(seconds))
+        Button.Builder(this, launchSetupClickable(seconds))
             .setTextContent(seconds.toString())
             .build()
 
-    /** Phase A: 프리셋 구분 없이 앱만 실행. Phase B에서 preset extra + setup 라우팅 추가. */
-    private fun launchAppClickable(seconds: Int): Clickable =
+    /** 앱을 열되, 누른 프리셋 초를 intent extra로 실어 보내 setup을 그 값으로 초기화하게 한다. */
+    private fun launchSetupClickable(seconds: Int): Clickable =
         Clickable.Builder()
             .setId("preset_$seconds")
             .setOnClick(
@@ -101,6 +101,10 @@ class SteakTileService : TileService() {
                         ActionBuilders.AndroidActivity.Builder()
                             .setPackageName(APP_PACKAGE)
                             .setClassName(MAIN_ACTIVITY)
+                            .addKeyToExtraMapping(
+                                EXTRA_PRESET_SECONDS,
+                                ActionBuilders.AndroidIntExtra.Builder().setValue(seconds).build(),
+                            )
                             .build(),
                     )
                     .build(),
@@ -118,5 +122,8 @@ class SteakTileService : TileService() {
         // :app 클래스 컴파일 의존을 피하려 패키지+클래스명 문자열로 지정.
         const val APP_PACKAGE = "com.seriouschoi.steaktimer"
         const val MAIN_ACTIVITY = "com.seriouschoi.steaktimer.presentation.MainActivity"
+
+        // 프리셋 초를 전달하는 intent extra 키. MainActivity의 같은 이름 상수와 문자열이 일치해야 함.
+        const val EXTRA_PRESET_SECONDS = "preset_seconds"
     }
 }

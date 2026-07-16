@@ -1,5 +1,6 @@
 package com.seriouschoi.steaktimer.feature.timer.setup
 
+import androidx.lifecycle.SavedStateHandle
 import com.seriouschoi.steaktimer.domain.SteakTimerSession
 import com.seriouschoi.steaktimer.domain.SteakTimerState
 import com.seriouschoi.steaktimer.domain.TimerEngine
@@ -38,7 +39,7 @@ class SetupViewModelTest {
     @Test
     fun `증가·감소는 스텝만큼 조절한다`() =
         runTest(mainDispatcher.scheduler) {
-            val vm = SetupViewModel(SteakTimerSession(NoopTimerEngine(), backgroundScope))
+            val vm = SetupViewModel(SavedStateHandle(), SteakTimerSession(NoopTimerEngine(), backgroundScope))
             val job = backgroundScope.launch { vm.uiState.collect { } }
             runCurrent()
 
@@ -60,7 +61,7 @@ class SetupViewModelTest {
     @Test
     fun `감소는 최소값 아래로 내려가지 않는다`() =
         runTest(mainDispatcher.scheduler) {
-            val vm = SetupViewModel(SteakTimerSession(NoopTimerEngine(), backgroundScope))
+            val vm = SetupViewModel(SavedStateHandle(), SteakTimerSession(NoopTimerEngine(), backgroundScope))
             val job = backgroundScope.launch { vm.uiState.collect { } }
             runCurrent()
 
@@ -75,7 +76,7 @@ class SetupViewModelTest {
     fun `Start는 고른 간격으로 세션을 시작시킨다`() =
         runTest(mainDispatcher.scheduler) {
             val session = SteakTimerSession(NoopTimerEngine(), backgroundScope)
-            val vm = SetupViewModel(session)
+            val vm = SetupViewModel(SavedStateHandle(), session)
             val job = backgroundScope.launch { vm.uiState.collect { } }
             runCurrent()
 
@@ -91,4 +92,38 @@ class SetupViewModelTest {
 
             job.cancel()
         }
+
+    // --- 타일 딥링크: preset(nav-arg) → 초기 seconds ---
+
+    @Test
+    fun `유효한 preset은 초기 seconds가 된다`() =
+        runTest(mainDispatcher.scheduler) {
+            val vm = setupWithPreset(30)
+            assertEquals(30, vm.uiState.value.seconds)
+        }
+
+    @Test
+    fun `preset이 없으면 기본값으로 초기화된다`() =
+        runTest(mainDispatcher.scheduler) {
+            val vm = SetupViewModel(SavedStateHandle(), SteakTimerSession(NoopTimerEngine(), backgroundScope))
+            assertEquals(SetupViewModel.DEFAULT_SETUP_SECONDS, vm.uiState.value.seconds)
+        }
+
+    @Test
+    fun `범위를 벗어난 preset은 기본값으로 폴백한다`() =
+        runTest(mainDispatcher.scheduler) {
+            // 최소 미만
+            assertEquals(SetupViewModel.DEFAULT_SETUP_SECONDS, setupWithPreset(5).uiState.value.seconds)
+            // 최대 초과
+            assertEquals(SetupViewModel.DEFAULT_SETUP_SECONDS, setupWithPreset(9999).uiState.value.seconds)
+            // sentinel(-1)
+            assertEquals(SetupViewModel.DEFAULT_SETUP_SECONDS, setupWithPreset(-1).uiState.value.seconds)
+        }
+
+    // 세션의 무한 collector가 runTest를 붙잡지 않도록 backgroundScope에 태운다(기존 테스트와 동일).
+    private fun kotlinx.coroutines.test.TestScope.setupWithPreset(preset: Int): SetupViewModel =
+        SetupViewModel(
+            SavedStateHandle(mapOf("preset" to preset)),
+            SteakTimerSession(NoopTimerEngine(), backgroundScope),
+        )
 }
