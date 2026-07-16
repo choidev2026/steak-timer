@@ -44,14 +44,15 @@ class TimerForegroundService : Service() {
     override fun onCreate() {
         super.onCreate()
         ensureChannel()
+        ensureAlertChannel()
         startForeground(NOTIFICATION_ID, buildNotification(session.state.value))
 
-        // Alerting 동안만 WakeLock + 진동.
+        // Alerting 동안: WakeLock + 진동 + 뒤집기 heads-up 알림. 이탈 시 되돌린다.
         scope.launch {
             observeAlerting(
                 state = session.state,
-                onEnter = { acquireWakeLock(); haptic.startAlert() },
-                onLeave = { haptic.stop(); releaseWakeLock() },
+                onEnter = { acquireWakeLock(); haptic.startAlert(); postFlipAlert() },
+                onLeave = { haptic.stop(); releaseWakeLock(); cancelFlipAlert() },
             )
         }
         // 표시 상태(러닝 사이클/알림)가 바뀔 때만 Ongoing Activity 갱신(틱마다 X — 카운트다운은 시스템이 렌더).
@@ -80,6 +81,7 @@ class TimerForegroundService : Service() {
         // 자동 삭제가 안 돼 워치페이스 아이콘/알림이 남는다 → 여기서 확실히 내린다.
         stopForeground(STOP_FOREGROUND_REMOVE)
         notificationManager.cancel(NOTIFICATION_ID)
+        cancelFlipAlert()
         scope.cancel()
         super.onDestroy()
     }
@@ -97,6 +99,37 @@ class TimerForegroundService : Service() {
                 NotificationChannel(CHANNEL_ID, "타이머 실행", NotificationManager.IMPORTANCE_LOW),
             )
         }
+    }
+
+    /** 뒤집기 알림 채널: heads-up 위해 HIGH, 단 소리·진동은 끔(무음 스펙 + 진동은 haptic이 담당). */
+    private fun ensureAlertChannel() {
+        if (notificationManager.getNotificationChannel(ALERT_CHANNEL_ID) == null) {
+            val channel = NotificationChannel(
+                ALERT_CHANNEL_ID, "뒤집기 알림", NotificationManager.IMPORTANCE_HIGH,
+            ).apply {
+                setSound(null, null)
+                enableVibration(false)
+            }
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    /** 뒤집기 시점에 손목만 들어도 보이는 heads-up 알림. 탭하면 앱 복귀. */
+    private fun postFlipAlert() {
+        val notification = NotificationCompat.Builder(this, ALERT_CHANNEL_ID)
+            .setContentTitle("뒤집기!")
+            .setContentText("탭해서 다음")
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(false)
+            .apply { touchIntent()?.let { setContentIntent(it) } }
+            .build()
+        notificationManager.notify(ALERT_NOTIFICATION_ID, notification)
+    }
+
+    private fun cancelFlipAlert() {
+        notificationManager.cancel(ALERT_NOTIFICATION_ID)
     }
 
     /** 표시 갱신 트리거 키: 러닝은 사이클 단위(틱 제외), 알림/그 외는 하나로. */
@@ -166,7 +199,9 @@ class TimerForegroundService : Service() {
     companion object {
         const val ACTION_DEADLINE = "com.seriouschoi.steaktimer.action.DEADLINE"
         private const val NOTIFICATION_ID = 1
+        private const val ALERT_NOTIFICATION_ID = 2
         private const val CHANNEL_ID = "steak_timer_running"
+        private const val ALERT_CHANNEL_ID = "steak_timer_alert"
         private const val WAKELOCK_TAG = "SteakTimer::AlertWakeLock"
         private const val WAKELOCK_TIMEOUT_MS = 10L * 60L * 1000L // 10분(안전장치)
     }
