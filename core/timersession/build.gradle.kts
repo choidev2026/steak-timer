@@ -28,6 +28,10 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(libs.kotlinx.coroutines.core)
 
+    // Wear Ongoing Activity(워치페이스에 실행 중 타이머 노출) + NotificationCompat
+    implementation(libs.wear.ongoing)
+    implementation(libs.androidx.core.ktx)
+
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
