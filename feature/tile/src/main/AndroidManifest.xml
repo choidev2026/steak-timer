@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!--
+            스테이크 타이머 타일: 워치페이스에서 스와이프로 여는 정적 런처.
+            선언을 이 모듈 매니페스트에 두면 :app 매니페스트로 머지된다(:app은 타일 내부를 몰라도 됨).
+        -->
+        <service
+            android:name=".SteakTileService"
+            android:label="스테이크 타이머"
+            android:exported="true"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>

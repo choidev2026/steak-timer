@@ -6,6 +6,9 @@ composeBom = "2024.09.02"
 wearComposeMaterial = "1.4.0"
 wearToolingPreview = "1.0.0"
 wearOngoing = "1.0.0"
+wearTiles = "1.4.0"
+wearProtolayout = "1.2.0"
+guava = "32.1.3-android"
 androidxCore = "1.13.1"
 coroutines = "1.8.1"
 hilt = "2.51.1"
@@ -32,6 +35,10 @@ wear-compose-foundation = { group = "androidx.wear.compose", name = "compose-fou
 wear-compose-navigation = { group = "androidx.wear.compose", name = "compose-navigation", version.ref = "wearComposeMaterial" }
 wear-tooling-preview = { group = "androidx.wear", name = "wear-tooling-preview", version.ref = "wearToolingPreview" }
 wear-ongoing = { group = "androidx.wear", name = "wear-ongoing", version.ref = "wearOngoing" }
+wear-tiles = { group = "androidx.wear.tiles", name = "tiles", version.ref = "wearTiles" }
+wear-protolayout = { group = "androidx.wear.protolayout", name = "protolayout", version.ref = "wearProtolayout" }
+wear-protolayout-material = { group = "androidx.wear.protolayout", name = "protolayout-material", version.ref = "wearProtolayout" }
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidxCore" }
 
 [plugins]
