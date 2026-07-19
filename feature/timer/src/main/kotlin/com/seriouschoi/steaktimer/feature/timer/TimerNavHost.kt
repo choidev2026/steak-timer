@@ -16,9 +16,24 @@ const val PRESET_NONE = -1
 /** setup 목적지의 nav-arg 이름. `SetupViewModel`이 같은 이름으로 읽는다(양쪽 일치 필요). */
 const val ARG_PRESET = "preset"
 
-// 목적지 route. setup은 선택적 preset 쿼리 인자를 갖는 패턴 하나로 등록/pop 모두에 쓴다.
-private const val ROUTE_SETUP = "setup?$ARG_PRESET={$ARG_PRESET}"
-private const val ROUTE_TIMER = "timer"
+/**
+ * 목적지 라우트를 한 곳에서 관리한다 — 문자열 조립/일치를 객체로 캡슐화해
+ * 등록·시작·pop이 흩어진 문자열이 아니라 **같은 소스**를 쓰게 한다(패턴 불일치 위험 제거).
+ *
+ * type-safe nav(@Serializable 라우트)가 이상적이지만, 현재 스택(navigation 2.6.0 +
+ * Wear `SwipeDismissableNavHost`)이 type-safe 오버로드를 아직 안 줘서 문자열 라우트를
+ * 쓰되 이 객체로 감싼다.
+ */
+private object Routes {
+    const val TIMER = "timer"
+
+    // setup은 선택적 preset 쿼리 인자를 갖는 단일 패턴. 등록·pop은 이 패턴을, 시작은 setup(preset)을 쓴다.
+    const val SETUP_PATTERN = "setup?$ARG_PRESET={$ARG_PRESET}"
+
+    /** 프리셋을 채운 setup 경로. preset이 없으면(≤0) 패턴 그대로 둬 기본값이 채워지게 한다. */
+    fun setup(preset: Int): String =
+        if (preset > 0) "setup?$ARG_PRESET=$preset" else SETUP_PATTERN
+}
 
 /**
  * 앱 화면 그래프. 설정 ↔ 타이머 두 목적지.
@@ -38,10 +53,10 @@ fun TimerApp(presetSeconds: Int = PRESET_NONE) {
     SwipeDismissableNavHost(
         navController = navController,
         // 프리셋이 있으면 그 값을 채운 setup 목적지로 시작, 없으면 패턴 그대로(기본값이 채워짐).
-        startDestination = if (presetSeconds > 0) "setup?$ARG_PRESET=$presetSeconds" else ROUTE_SETUP,
+        startDestination = Routes.setup(presetSeconds),
     ) {
         composable(
-            route = ROUTE_SETUP,
+            route = Routes.SETUP_PATTERN,
             arguments = listOf(
                 navArgument(ARG_PRESET) {
                     type = NavType.IntType
@@ -49,10 +64,10 @@ fun TimerApp(presetSeconds: Int = PRESET_NONE) {
                 },
             ),
         ) {
-            SetupScreen(onStarted = { navController.navigate(ROUTE_TIMER) })
+            SetupScreen(onStarted = { navController.navigate(Routes.TIMER) })
         }
-        composable(ROUTE_TIMER) {
-            TimerScreen(onExit = { navController.popBackStack(ROUTE_SETUP, inclusive = false) })
+        composable(Routes.TIMER) {
+            TimerScreen(onExit = { navController.popBackStack(Routes.SETUP_PATTERN, inclusive = false) })
         }
     }
 }
