@@ -6,8 +6,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.seriouschoi.steaktimer.domain.SteakTimerSession
-import com.seriouschoi.steaktimer.feature.timer.ARG_PRESET
-import com.seriouschoi.steaktimer.feature.timer.PRESET_NONE
+import com.seriouschoi.steaktimer.feature.timer.Route
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -54,7 +53,7 @@ class SetupViewModel @Inject constructor(
         SetupUiState(seconds = this, timeText = TimeFormat.mmSs(this * 1000L))
 
     private fun SavedStateHandle.initialSeconds(): Int {
-        val preset = get<Int>(ARG_PRESET) ?: PRESET_NONE
+        val preset = get<Int>(Route.Setup.ARG_PRESET) ?: Route.Setup.PRESET_NONE
         return if (preset in MIN_SECONDS..MAX_SECONDS) preset else DEFAULT_SETUP_SECONDS
     }
 

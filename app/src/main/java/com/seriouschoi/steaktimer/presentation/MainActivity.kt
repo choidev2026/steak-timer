@@ -8,7 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import com.seriouschoi.steaktimer.presentation.theme.SteakTimerTheme
-import com.seriouschoi.steaktimer.feature.timer.PRESET_NONE
+import com.seriouschoi.steaktimer.feature.timer.Route
 import com.seriouschoi.steaktimer.feature.timer.TimerApp
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -23,7 +23,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         requestNotificationPermissionIfNeeded()
         // 타일에서 프리셋 초를 실어 진입하면 setup 화면을 그 값으로 초기화한다(없으면 -1 → 기본값).
-        val presetSeconds = intent.getIntExtra(EXTRA_PRESET_SECONDS, PRESET_NONE)
+        val presetSeconds = intent.getIntExtra(EXTRA_PRESET_SECONDS, Route.Setup.PRESET_NONE)
         setContent {
             SteakTimerTheme {
                 TimerApp(presetSeconds = presetSeconds)

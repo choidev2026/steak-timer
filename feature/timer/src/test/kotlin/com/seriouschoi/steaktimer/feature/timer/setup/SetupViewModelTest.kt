@@ -123,7 +123,7 @@ class SetupViewModelTest {
     // 세션의 무한 collector가 runTest를 붙잡지 않도록 backgroundScope에 태운다(기존 테스트와 동일).
     private fun kotlinx.coroutines.test.TestScope.setupWithPreset(preset: Int): SetupViewModel =
         SetupViewModel(
-            SavedStateHandle(mapOf("preset" to preset)),
+            SavedStateHandle(mapOf(com.seriouschoi.steaktimer.feature.timer.Route.Setup.ARG_PRESET to preset)),
             SteakTimerSession(NoopTimerEngine(), backgroundScope),
         )
 }
