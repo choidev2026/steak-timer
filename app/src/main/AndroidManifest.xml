@@ -42,14 +42,6 @@
             </intent-filter>
         </activity>
 
-        <!-- 타이머 실행 동안 프로세스 유지 + 알림 진동 구동 + 완주 알람 수신(:core:timersession) -->
-        <service
-            android:name="com.seriouschoi.steaktimer.core.timersession.TimerForegroundService"
-            android:exported="false"
-            android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="interval_cooking_timer" />
-        </service>
+        <!-- TimerForegroundService 선언은 :core:timersession 모듈 매니페스트에 있고 병합된다(#33). -->
     </application>
 </manifest>
