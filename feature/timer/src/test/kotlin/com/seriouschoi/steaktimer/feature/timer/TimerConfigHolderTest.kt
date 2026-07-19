@@ -14,11 +14,15 @@ class TimerConfigHolderTest {
     @Test
     fun `increase decrease는 스텝만큼 조절한다`() {
         val holder = TimerConfigHolder()
+        val base = TimerConfigHolder.DEFAULT_SECONDS
+        val step = TimerConfigHolder.STEP_SECONDS
+
         holder.increase()
-        assertEquals(70, holder.seconds.value)
+        assertEquals(base + step, holder.seconds.value)
+
         holder.decrease()
         holder.decrease()
-        assertEquals(50, holder.seconds.value)
+        assertEquals(base - step, holder.seconds.value)
     }
 
     @Test
@@ -40,16 +44,19 @@ class TimerConfigHolderTest {
     @Test
     fun `범위 밖·없는 프리셋 seed는 현재 값을 유지한다`() {
         val holder = TimerConfigHolder()
-        holder.seed(TimerLaunch(presetSeconds = 5))     // 최소 미만
-        assertEquals(60, holder.seconds.value)
-        holder.seed(TimerLaunch(presetSeconds = 9999))  // 최대 초과
-        assertEquals(60, holder.seconds.value)
-        holder.seed(TimerLaunch())                       // PRESET_NONE
-        assertEquals(60, holder.seconds.value)
+        val base = TimerConfigHolder.DEFAULT_SECONDS
+        val step = TimerConfigHolder.STEP_SECONDS
+
+        holder.seed(TimerLaunch(presetSeconds = TimerConfigHolder.MIN_SECONDS - 1)) // 최소 미만
+        assertEquals(base, holder.seconds.value)
+        holder.seed(TimerLaunch(presetSeconds = TimerConfigHolder.MAX_SECONDS + 1)) // 최대 초과
+        assertEquals(base, holder.seconds.value)
+        holder.seed(TimerLaunch())                                                   // PRESET_NONE
+        assertEquals(base, holder.seconds.value)
 
         // 조절된 값도 잘못된 seed로는 안 덮인다(복귀 시 직전 설정 보존).
         holder.increase()
         holder.seed(TimerLaunch(presetSeconds = TimerLaunch.PRESET_NONE))
-        assertEquals(70, holder.seconds.value)
+        assertEquals(base + step, holder.seconds.value)
     }
 }
