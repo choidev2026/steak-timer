@@ -4,8 +4,8 @@ import com.seriouschoi.steaktimer.feature.timer.countdown.TimerScreen
 import com.seriouschoi.steaktimer.feature.timer.setup.SetupScreen
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
+import androidx.compose.runtime.LaunchedEffect
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
@@ -16,29 +16,24 @@ import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
  * - 설정에서 시작 → 타이머로 이동(설정은 백스택에 남겨 정지 시 되돌아옴).
  * - 타이머에서 정지(세션 Idle) → 설정으로 pop.
  *
- * 두 화면은 각자 ViewModel을 갖고, 공유 세션(앱 스코프 싱글턴)을 통해 이어진다.
- *
- * [presetSeconds] : 타일에서 프리셋을 들고 진입하면 그 초를 setup 시작 목적지에 nav-arg로 실어,
- * `SetupViewModel`이 `SavedStateHandle`로 읽어 초기값을 잡는다(액티비티 인텐트를 컴포저블에 직접
- * 꽂지 않고 기존 네비 흐름을 그대로 태운다).
+ * [launch] : 앱을 띄운 입력(타일 프리셋 등). [TimerAppViewModel]이 이 값을 [TimerConfigHolder]에
+ * **한 번** seeding 하고, 이후 설정 초기값은 홀더가 소유한다(#36). 그래프 자체는 진입 파라미터를
+ * 라우트로 실어나르지 않고 순수 화면 전환만 담당한다.
  */
 @Composable
-fun TimerApp(presetSeconds: Int = Route.Setup.PRESET_NONE) {
+fun TimerApp(
+    launch: TimerLaunch = TimerLaunch(),
+    viewModel: TimerAppViewModel = hiltViewModel(),
+) {
+    // 런치 입력을 홀더에 1회 주입(VM 수명으로 재-seed 방지 — 회전 등에도 한 번만).
+    LaunchedEffect(Unit) { viewModel.seed(launch) }
+
     val navController = rememberSwipeDismissableNavController()
     SwipeDismissableNavHost(
         navController = navController,
-        // 프리셋이 있으면 그 값을 채운 setup 목적지로 시작, 없으면 패턴 그대로(기본값이 채워짐).
-        startDestination = Route.Setup.path(presetSeconds),
+        startDestination = Route.Setup.pattern,
     ) {
-        composable(
-            route = Route.Setup.pattern,
-            arguments = listOf(
-                navArgument(Route.Setup.ARG_PRESET) {
-                    type = NavType.IntType
-                    defaultValue = Route.Setup.PRESET_NONE
-                },
-            ),
-        ) {
+        composable(Route.Setup.pattern) {
             SetupScreen(onStarted = { navController.navigate(Route.Timer.pattern) })
         }
         composable(Route.Timer.pattern) {
