@@ -47,15 +47,17 @@ class SetupViewModelTest {
         runTest(mainDispatcher.scheduler) {
             val config = TimerConfigHolder()
             val vm = SetupViewModel(config, SteakTimerSession(NoopTimerEngine(), backgroundScope))
-            assertEquals(config.seconds.value, vm.uiState.value.seconds) // 초기값 = 홀더 값(기본 60)
+            assertEquals(config.seconds.value, vm.uiState.value.seconds) // 초기값 = 홀더 값(기본)
 
             val job = backgroundScope.launch { vm.uiState.collect { } }
             runCurrent()
 
+            // 기대값을 매직넘버가 아니라 "기본값 + 한 스텝"으로 명시.
+            val expected = TimerConfigHolder.DEFAULT_SECONDS + TimerConfigHolder.STEP_SECONDS
             vm.dispatch(SetupUiIntent.Increase)
             runCurrent()
-            assertEquals(70, config.seconds.value)          // 홀더로 위임됨
-            assertEquals(70, vm.uiState.value.seconds)       // uiState가 홀더를 반영
+            assertEquals(expected, config.seconds.value)     // 홀더로 위임됨
+            assertEquals(expected, vm.uiState.value.seconds) // uiState가 홀더를 반영
 
             job.cancel()
         }
