@@ -2,9 +2,11 @@ package com.seriouschoi.steaktimer.feature.timer.setup
 
 import com.seriouschoi.steaktimer.feature.timer.TimeFormat
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.seriouschoi.steaktimer.domain.SteakTimerSession
+import com.seriouschoi.steaktimer.feature.timer.Route
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,22 +20,26 @@ import javax.inject.Inject
  * 설정 화면 상태(간격 선택)를 소유하고, 시작 시 세션에 발행한다.
  *
  * 간격 선택 상태를 컴포저블 로컬이 아니라 여기서 갖는 이유:
- * (1) 화면 수명(회전 등) 넘어 유지, (2) Step 3(지속성)에서 저장된 기본값을 여기로
- * 로드해 초기 seconds를 채우기 위함.
+ * (1) 화면 수명(회전 등) 넘어 유지, (2) 타일에서 넘어온 프리셋(nav-arg)을 초기값으로 로드하기 위함.
+ *
+ * 초기 seconds는 [SavedStateHandle]의 `preset`(타일 딥링크가 실은 nav-arg)에서 온다.
+ * 유효 범위를 벗어나거나 없으면 [DEFAULT_SETUP_SECONDS]로 폴백한다.
  */
 @HiltViewModel
 class SetupViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val session: SteakTimerSession,
 ) : ViewModel() {
 
-    private val _seconds = MutableStateFlow(DEFAULT_SETUP_SECONDS)
+    private val _seconds = MutableStateFlow(savedStateHandle.initialSeconds())
 
     val uiState: StateFlow<SetupUiState> = _seconds
         .map { it.toSetupUiState() }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = DEFAULT_SETUP_SECONDS.toSetupUiState(),
+            // 첫 프레임부터 프리셋이 보이도록 초기값도 현재 seconds로 맞춘다(기본값으로 깜빡이지 않게).
+            initialValue = _seconds.value.toSetupUiState(),
         )
 
     fun dispatch(intent: SetupUiIntent) = when (intent) {
@@ -45,6 +51,11 @@ class SetupViewModel @Inject constructor(
 
     private fun Int.toSetupUiState(): SetupUiState =
         SetupUiState(seconds = this, timeText = TimeFormat.mmSs(this * 1000L))
+
+    private fun SavedStateHandle.initialSeconds(): Int {
+        val preset = get<Int>(Route.Setup.ARG_PRESET) ?: Route.Setup.PRESET_NONE
+        return if (preset in MIN_SECONDS..MAX_SECONDS) preset else DEFAULT_SETUP_SECONDS
+    }
 
     companion object {
         const val DEFAULT_SETUP_SECONDS = 60   // 기본 1분

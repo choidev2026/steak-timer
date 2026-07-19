@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import com.seriouschoi.steaktimer.presentation.theme.SteakTimerTheme
+import com.seriouschoi.steaktimer.feature.timer.Route
 import com.seriouschoi.steaktimer.feature.timer.TimerApp
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -21,9 +22,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestNotificationPermissionIfNeeded()
+        // 타일에서 프리셋 초를 실어 진입하면 setup 화면을 그 값으로 초기화한다(없으면 -1 → 기본값).
+        val presetSeconds = intent.getIntExtra(EXTRA_PRESET_SECONDS, Route.Setup.PRESET_NONE)
         setContent {
             SteakTimerTheme {
-                TimerApp()
+                TimerApp(presetSeconds = presetSeconds)
             }
         }
     }
@@ -35,5 +38,10 @@ class MainActivity : ComponentActivity() {
         ) {
             requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+    }
+
+    companion object {
+        // 타일이 프리셋 초를 실어 보내는 intent extra 키(타일 모듈의 같은 이름 상수와 문자열 일치).
+        const val EXTRA_PRESET_SECONDS = "preset_seconds"
     }
 }
