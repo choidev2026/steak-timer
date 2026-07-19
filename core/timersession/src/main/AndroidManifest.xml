@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!--
+            타이머 실행 동안 프로세스 유지 + 알림 진동 구동 + 완주 알람 수신.
+            컴포넌트가 사는 이 모듈에 선언하고 :app 매니페스트로 머지한다(:app은 이 서비스 내부를 몰라도 됨).
+            필요한 권한(FOREGROUND_SERVICE / _SPECIAL_USE 등)은 :app 매니페스트에 있고, 병합 시 함께 적용된다.
+        -->
+        <service
+            android:name=".TimerForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="interval_cooking_timer" />
+        </service>
+    </application>
+</manifest>
