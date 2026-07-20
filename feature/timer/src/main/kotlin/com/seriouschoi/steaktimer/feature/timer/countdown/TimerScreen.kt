@@ -56,7 +56,7 @@ private fun TimerContent(
     ui: TimerUiState,
     onIntent: (TimerUiIntent) -> Unit,
 ) {
-    Scaffold(timeText = { TimeText() }) {
+    Scaffold(timeText = { TimeText(modifier = Modifier.padding(top = 10.dp)) }) {
         Box(modifier = Modifier.fillMaxSize()) {
             TimerBody(ui = ui, onIntent = onIntent)
 
@@ -204,7 +204,12 @@ private fun TimerRunningPreview() {
 @Composable
 private fun FlipAlertPreview() {
     TimerContent(
-        ui = TimerUiState(isIdle = false, timeText = "00:00", progress = 0f, alert = TimerAlert.Flip),
+        ui = TimerUiState(
+            isIdle = false,
+            timeText = "00:00",
+            progress = 0f,
+            alert = TimerAlert.Flip
+        ),
         onIntent = {},
     )
 }
@@ -213,7 +218,12 @@ private fun FlipAlertPreview() {
 @Composable
 private fun StopConfirmPreview() {
     TimerContent(
-        ui = TimerUiState(isIdle = false, timeText = "00:05", progress = 0.5f, alert = TimerAlert.ConfirmStop),
+        ui = TimerUiState(
+            isIdle = false,
+            timeText = "00:05",
+            progress = 0.5f,
+            alert = TimerAlert.ConfirmStop
+        ),
         onIntent = {},
     )
 }
