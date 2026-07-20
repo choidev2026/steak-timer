@@ -1,6 +1,9 @@
 package com.seriouschoi.steaktimer.core.timersession
 
 import com.seriouschoi.steaktimer.domain.SteakTimerState
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -101,6 +104,25 @@ class ServiceEffectTest {
         assertEquals(
             listOf(ServiceEffect.StartService, ServiceEffect.StartAlerting),
             effectsFor(null, alerting()),
+        )
+    }
+
+    @Test
+    fun `serviceEffects는 상태 시퀀스를 효과 시퀀스로 편다`() = runTest {
+        // Idle → Running → Alerting → Idle 한 사이클의 효과 방출 순서 전체를 고정.
+        val states = flowOf(
+            SteakTimerState.Idle,
+            running(remaining = 30_000L),
+            alerting(),
+            SteakTimerState.Idle,
+        )
+        assertEquals(
+            listOf(
+                ServiceEffect.StartService, ServiceEffect.ScheduleAlarm(30_000L), // Idle→Running
+                ServiceEffect.CancelAlarm, ServiceEffect.StartAlerting,           // Running→Alerting
+                ServiceEffect.StopService, ServiceEffect.StopAlerting,            // Alerting→Idle
+            ),
+            states.serviceEffects().toList(),
         )
     }
 }

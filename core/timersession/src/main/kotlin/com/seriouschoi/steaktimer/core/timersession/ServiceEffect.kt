@@ -2,6 +2,7 @@ package com.seriouschoi.steaktimer.core.timersession
 
 import com.seriouschoi.steaktimer.domain.SteakTimerState
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 /**
  * 도메인 상태 **전이**에서 파생되는 서비스 부수효과. 순수 데이터(플랫폼 의존 없음).
@@ -60,13 +61,16 @@ private fun isLeavingRunning(prev: SteakTimerState?, cur: SteakTimerState): Bool
     cur !is SteakTimerState.Running && prev is SteakTimerState.Running
 
 /**
- * 상태 흐름을 전이별 효과로 풀어 [run]에 흘리는 공용 드라이버.
- * 컨트롤러·서비스가 이걸로 관측하고, 각자 **자기 것만** 실행한다(매핑은 [effectsFor] 한 곳).
+ * 상태 흐름을 **전이별 효과 흐름**으로 바꾸는 콜드 Flow.
+ * 컨트롤러·서비스가 각자 collect해서 **자기 것만** 실행한다(매핑은 [effectsFor] 한 곳).
+ *
+ * 콜백 대신 `Flow<ServiceEffect>`로 두는 이유: "상태 흐름 → 효과 흐름"은 본질적으로 Flow 변환이라,
+ * 소비자가 수집을 소유하고(디스패처·취소·연산자 자유) 유한 입력으로 방출 시퀀스를 그대로 테스트할 수 있다.
  */
-suspend fun runServiceEffects(state: Flow<SteakTimerState>, run: (ServiceEffect) -> Unit) {
+fun Flow<SteakTimerState>.serviceEffects(): Flow<ServiceEffect> = flow {
     var prev: SteakTimerState? = null
-    state.collect { cur ->
-        effectsFor(prev, cur).forEach(run)
+    collect { cur ->
+        effectsFor(prev, cur).forEach { emit(it) }
         prev = cur
     }
 }

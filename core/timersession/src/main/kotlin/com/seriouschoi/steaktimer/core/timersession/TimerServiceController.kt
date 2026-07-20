@@ -30,7 +30,7 @@ class TimerServiceController @Inject constructor(
 ) {
     fun start() {
         scope.launch {
-            runServiceEffects(session.state) { effect ->
+            session.state.serviceEffects().collect { effect ->
                 when (effect) {
                     ServiceEffect.StartService -> startService()
                     ServiceEffect.StopService -> stopService()

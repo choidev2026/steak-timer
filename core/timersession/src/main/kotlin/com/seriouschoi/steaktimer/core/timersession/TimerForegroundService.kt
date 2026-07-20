@@ -49,7 +49,7 @@ class TimerForegroundService : Service() {
         // 서비스가 살아있어야 걸 수 있는 효과(Alerting)만 여기서 실행한다.
         // 매핑은 순수 함수 effectsFor가 정하고, 이 러너는 자기 것만 골라 실행(#35).
         scope.launch {
-            runServiceEffects(session.state) { effect ->
+            session.state.serviceEffects().collect { effect ->
                 when (effect) {
                     ServiceEffect.StartAlerting -> { acquireWakeLock(); haptic.startAlert(); postFlipAlert() }
                     ServiceEffect.StopAlerting -> { haptic.stop(); releaseWakeLock(); cancelFlipAlert() }
