@@ -46,13 +46,17 @@ class TimerForegroundService : Service() {
         // 동적 카운트다운은 안 보인다 → 사이클마다 갱신하지 않는다. 뒤집기 안내는 postFlipAlert가 담당.
         startForeground(NOTIFICATION_ID, buildNotification())
 
-        // Alerting 동안: WakeLock + 진동 + 뒤집기 heads-up 알림. 이탈 시 되돌린다.
+        // 서비스가 살아있어야 걸 수 있는 효과(Alerting)만 여기서 실행한다.
+        // 매핑은 순수 함수 effectsFor가 정하고, 이 러너는 자기 것만 골라 실행(#35).
         scope.launch {
-            observeAlerting(
-                state = session.state,
-                onEnter = { acquireWakeLock(); haptic.startAlert(); postFlipAlert() },
-                onLeave = { haptic.stop(); releaseWakeLock(); cancelFlipAlert() },
-            )
+            runServiceEffects(session.state) { effect ->
+                when (effect) {
+                    ServiceEffect.StartAlerting -> { acquireWakeLock(); haptic.startAlert(); postFlipAlert() }
+                    ServiceEffect.StopAlerting -> { haptic.stop(); releaseWakeLock(); cancelFlipAlert() }
+                    // 서비스 수명·알람은 앱스코프 컨트롤러가 실행.
+                    else -> Unit
+                }
+            }
         }
     }
 

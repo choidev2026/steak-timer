@@ -4,20 +4,19 @@ import android.content.Context
 import android.content.Intent
 import com.seriouschoi.steaktimer.core.timersession.di.ApplicationScope
 import com.seriouschoi.steaktimer.domain.SteakTimerSession
-import com.seriouschoi.steaktimer.domain.SteakTimerState
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * 세션 상태를 단일 진실원으로 관측해 두 가지를 관리한다:
- *  1. **포그라운드 서비스 수명** — 활성(Idle 아님)이면 서비스 up, Idle이면 down.
- *  2. **완주 알람 예약** — Running 인터벌이 시작될 때마다 그 완주 시각에 알람을 예약하고,
- *     Running을 벗어나면 취소한다. (딥슬립을 뚫는 타이밍 보장은 이 알람이 맡는다.)
+ * 세션 상태를 단일 진실원으로 관측해, **앱스코프 효과**를 실행하는 러너:
+ *  - 포그라운드 서비스 수명([ServiceEffect.StartService]/[ServiceEffect.StopService])
+ *  - 완주 알람 예약/취소([ServiceEffect.ScheduleAlarm]/[ServiceEffect.CancelAlarm], 딥슬립 관통)
+ *
+ * "어떤 전이에 어떤 효과"는 순수 함수 [effectsFor]가 정하고(#35), 여기선 그중 **자기 것만** 실행한다.
+ * Alerting 관련 효과는 서비스가 살아있어야 하므로 [TimerForegroundService]가 실행한다.
  *
  * UI 이벤트가 아니라 세션 상태로 트리거하므로 화면/ViewModel과 독립적이고 robust하다.
  * [SteakTimerApp]이 [start]로 관측을 켠다.
@@ -30,35 +29,19 @@ class TimerServiceController @Inject constructor(
     @ApplicationScope private val scope: CoroutineScope,
 ) {
     fun start() {
-        // 1. 포그라운드 서비스 수명
         scope.launch {
-            session.state
-                .map { it !is SteakTimerState.Idle }
-                .distinctUntilChanged()
-                .collect { active -> if (active) startService() else stopService() }
-        }
-        // 2. 완주 알람 예약: 새 Running에 진입할 때만 예약, Running을 벗어나면 취소.
-        scope.launch {
-            var prev: SteakTimerState? = null
-            session.state.collect { cur ->
-                when {
-                    enteringRunning(prev, cur) ->
-                        alarmScheduler.scheduleAfter((cur as SteakTimerState.Running).remainingMs)
-                    leavingRunning(prev, cur) ->
-                        alarmScheduler.cancel()
+            runServiceEffects(session.state) { effect ->
+                when (effect) {
+                    ServiceEffect.StartService -> startService()
+                    ServiceEffect.StopService -> stopService()
+                    is ServiceEffect.ScheduleAlarm -> alarmScheduler.scheduleAfter(effect.afterMs)
+                    ServiceEffect.CancelAlarm -> alarmScheduler.cancel()
+                    // Alerting 효과는 서비스가 살아있어야 해서 서비스 러너가 실행.
+                    ServiceEffect.StartAlerting, ServiceEffect.StopAlerting -> Unit
                 }
-                prev = cur
             }
         }
     }
-
-    /** 새 러닝 에피소드 진입인가 — 비-Running에서 오거나, cycle이 바뀐 조기 뒤집기. (틱은 제외) */
-    private fun enteringRunning(prev: SteakTimerState?, cur: SteakTimerState): Boolean =
-        cur is SteakTimerState.Running &&
-            (prev !is SteakTimerState.Running || prev.cycle != cur.cycle)
-
-    private fun leavingRunning(prev: SteakTimerState?, cur: SteakTimerState): Boolean =
-        cur !is SteakTimerState.Running && prev is SteakTimerState.Running
 
     private fun startService() {
         context.startForegroundService(Intent(context, TimerForegroundService::class.java))
