@@ -22,10 +22,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.wear.compose.material.Button
+import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Chip
 import androidx.wear.compose.material.ChipDefaults
 import androidx.wear.compose.material.CircularProgressIndicator
-import androidx.wear.compose.material.CompactChip
+import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
@@ -107,16 +113,31 @@ private fun TimerBody(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                CompactChip(
+                Button(
                     onClick = { onIntent(TimerUiIntent.Stop) },
-                    label = { Text("정지") },
-                    colors = ChipDefaults.secondaryChipColors(),
-                )
-                CompactChip(
+                    colors = ButtonDefaults.secondaryButtonColors(
+                        backgroundColor = Color.DarkGray,
+                    ),
+                    modifier = Modifier.size(ButtonDefaults.SmallButtonSize),
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "정지",
+                        tint = Color.Red,
+                        modifier = Modifier.size(ButtonDefaults.SmallIconSize),
+                    )
+                }
+                Button(
                     onClick = { onIntent(TimerUiIntent.Skip) },
-                    label = { Text("건너뛰기") },
-                    colors = ChipDefaults.primaryChipColors(),
-                )
+                    colors = ButtonDefaults.primaryButtonColors(),
+                    modifier = Modifier.size(ButtonDefaults.SmallButtonSize),
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "건너뛰기",
+                        modifier = Modifier.size(ButtonDefaults.SmallIconSize),
+                    )
+                }
             }
         }
     }
